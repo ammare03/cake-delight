@@ -1,0 +1,52 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.log
+.mvn/
+mvnw
+mvnw.cmd
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.env.local
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env / secrets
+.env
+.env.production
+*.pem
+*.key
+
+# Docker
+*.pid
+
+# Local overrides
+application-local.yml
+config-repo/*-local.yml
+
+# Claude Code project files
+CLAUDE.md
+.claude/
