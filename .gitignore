@@ -54,3 +54,6 @@ config-repo/*-local.properties
 # Claude Code project files
 CLAUDE.md
 .claude/
+
+# Audit reports — local only, not committed
+docs/
