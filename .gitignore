@@ -9,6 +9,10 @@ mvnw
 mvnw.cmd
 !**/src/main/**/target/
 !**/src/test/**/target/
+# Spring Initializr per-module boilerplate — monorepo uses this root .gitignore instead
+HELP.md
+.gitattributes
+!/.gitattributes
 
 # IDEs
 .idea/
@@ -44,8 +48,8 @@ yarn-error.log*
 *.pid
 
 # Local overrides
-application-local.yml
-config-repo/*-local.yml
+application-local.properties
+config-repo/*-local.properties
 
 # Claude Code project files
 CLAUDE.md
