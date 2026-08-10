@@ -1,13 +1,18 @@
 package com.cakedelight.ratingservice.service;
 
+import com.cakedelight.ratingservice.client.OrderClient;
+import com.cakedelight.ratingservice.client.dto.PurchaseCheckResponse;
 import com.cakedelight.ratingservice.dto.request.CreateRatingRequest;
 import com.cakedelight.ratingservice.dto.response.RatingResponse;
 import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
 import com.cakedelight.ratingservice.entity.Rating;
 import com.cakedelight.ratingservice.exception.DuplicateRatingException;
+import com.cakedelight.ratingservice.exception.NotPurchasedException;
+import com.cakedelight.ratingservice.exception.OrderServiceUnavailableException;
 import com.cakedelight.ratingservice.exception.UnauthenticatedException;
 import com.cakedelight.ratingservice.mapper.RatingMapper;
 import com.cakedelight.ratingservice.repository.RatingRepository;
+import feign.FeignException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +25,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +39,9 @@ class RatingServiceImplTest {
     @Mock
     RatingMapper ratingMapper;
 
+    @Mock
+    OrderClient orderClient;
+
     @InjectMocks
     RatingServiceImpl ratingService;
 
@@ -43,6 +52,7 @@ class RatingServiceImplTest {
         assertThatThrownBy(() -> ratingService.submitRating(request, null))
                 .isInstanceOf(UnauthenticatedException.class);
 
+        verify(orderClient, never()).checkPurchase(any(), any());
         verify(ratingRepository, never()).save(any(Rating.class));
     }
 
@@ -57,8 +67,31 @@ class RatingServiceImplTest {
     }
 
     @Test
+    void submitRating_whenNotPurchased_throwsNotPurchasedException() {
+        CreateRatingRequest request = new CreateRatingRequest(1L, 5, "Great cake");
+        when(orderClient.checkPurchase(42L, 1L)).thenReturn(new PurchaseCheckResponse(false));
+
+        assertThatThrownBy(() -> ratingService.submitRating(request, "42"))
+                .isInstanceOf(NotPurchasedException.class);
+
+        verify(ratingRepository, never()).save(any(Rating.class));
+    }
+
+    @Test
+    void submitRating_whenOrderServiceUnreachable_throwsOrderServiceUnavailableException() {
+        CreateRatingRequest request = new CreateRatingRequest(1L, 5, "Great cake");
+        when(orderClient.checkPurchase(42L, 1L)).thenThrow(mock(FeignException.class));
+
+        assertThatThrownBy(() -> ratingService.submitRating(request, "42"))
+                .isInstanceOf(OrderServiceUnavailableException.class);
+
+        verify(ratingRepository, never()).save(any(Rating.class));
+    }
+
+    @Test
     void submitRating_whenAlreadyRatedByThisUser_throwsDuplicateRatingException() {
         CreateRatingRequest request = new CreateRatingRequest(1L, 5, "Great cake");
+        when(orderClient.checkPurchase(42L, 1L)).thenReturn(new PurchaseCheckResponse(true));
         when(ratingRepository.existsByCakeIdAndUserId(1L, 42L)).thenReturn(true);
 
         assertThatThrownBy(() -> ratingService.submitRating(request, "42"))
@@ -70,6 +103,7 @@ class RatingServiceImplTest {
     @Test
     void submitRating_whenNewRating_savesAndReturnsResponse() {
         CreateRatingRequest request = new CreateRatingRequest(1L, 5, "Great cake");
+        when(orderClient.checkPurchase(42L, 1L)).thenReturn(new PurchaseCheckResponse(true));
         when(ratingRepository.existsByCakeIdAndUserId(1L, 42L)).thenReturn(false);
         Rating toSave = new Rating();
         Rating saved = new Rating();

@@ -55,6 +55,12 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
+        <!-- Phase 4: purchase-verification calls order-service (CLAUDE.md
+             §5.2's deferred TODO, now that order-service exists). -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.mysql</groupId>

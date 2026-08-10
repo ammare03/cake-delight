@@ -1,13 +1,18 @@
 package com.cakedelight.ratingservice.service;
 
+import com.cakedelight.ratingservice.client.OrderClient;
+import com.cakedelight.ratingservice.client.dto.PurchaseCheckResponse;
 import com.cakedelight.ratingservice.dto.request.CreateRatingRequest;
 import com.cakedelight.ratingservice.dto.response.RatingResponse;
 import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
 import com.cakedelight.ratingservice.entity.Rating;
 import com.cakedelight.ratingservice.exception.DuplicateRatingException;
+import com.cakedelight.ratingservice.exception.NotPurchasedException;
+import com.cakedelight.ratingservice.exception.OrderServiceUnavailableException;
 import com.cakedelight.ratingservice.exception.UnauthenticatedException;
 import com.cakedelight.ratingservice.mapper.RatingMapper;
 import com.cakedelight.ratingservice.repository.RatingRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,17 +27,18 @@ public class RatingServiceImpl implements RatingService {
 
     private final RatingRepository ratingRepository;
     private final RatingMapper ratingMapper;
+    private final OrderClient orderClient;
 
     @Override
     @Transactional
     public RatingResponse submitRating(CreateRatingRequest request, String rawUserId) {
         Long userId = parseUserId(rawUserId);
 
-        // TODO(Phase 4): CLAUDE.md §5.2 requires verifying the caller actually
-        // purchased this cake before letting them rate it, via a Feign call to
-        // order-service. order-service doesn't exist yet (Phase 4), so this
-        // check is deliberately deferred — see the Phase 3 planning discussion.
-        // Don't add it early; wire it in when order-service is real.
+        // CLAUDE.md §5.2 — only users who purchased the cake can rate it.
+        // Deferred through Phase 3 (order-service didn't exist yet); now
+        // wired to the real check via Feign, per the dated TODO this
+        // replaces.
+        requirePurchased(userId, request.cakeId());
 
         if (ratingRepository.existsByCakeIdAndUserId(request.cakeId(), userId)) {
             throw new DuplicateRatingException(request.cakeId(), userId);
@@ -58,6 +64,19 @@ public class RatingServiceImpl implements RatingService {
         }
         Double average = ratingRepository.findAverageRatingByCakeId(cakeId);
         return new RatingSummaryResponse(Math.round(average * 100.0) / 100.0, total);
+    }
+
+    private void requirePurchased(Long userId, Long cakeId) {
+        PurchaseCheckResponse result;
+        try {
+            result = orderClient.checkPurchase(userId, cakeId);
+        } catch (FeignException ex) {
+            log.error("order-service call failed while checking purchase for user {} cake {}", userId, cakeId, ex);
+            throw new OrderServiceUnavailableException();
+        }
+        if (!result.purchased()) {
+            throw new NotPurchasedException(cakeId);
+        }
     }
 
     private Long parseUserId(String rawUserId) {
