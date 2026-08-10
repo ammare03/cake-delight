@@ -56,6 +56,7 @@ class NotificationServiceImplTest {
     @Test
     void recordOrderCompleted_whenSendSucceeds_savesNotificationAsSent() {
         when(notificationRepository.existsByEventId("evt-1")).thenReturn(false);
+        when(notificationSender.channel()).thenReturn(NotificationChannel.IN_APP);
 
         notificationService.recordOrderCompleted(EVENT);
 
@@ -74,6 +75,7 @@ class NotificationServiceImplTest {
     @Test
     void recordOrderCompleted_whenSendThrows_savesNotificationAsFailed() {
         when(notificationRepository.existsByEventId("evt-1")).thenReturn(false);
+        when(notificationSender.channel()).thenReturn(NotificationChannel.EMAIL);
         doThrow(new RuntimeException("SMTP unreachable")).when(notificationSender).send(EVENT);
 
         notificationService.recordOrderCompleted(EVENT);
