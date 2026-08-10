@@ -19,11 +19,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * The gateway's trust boundary (CLAUDE.md §4). Runs as a plain servlet
@@ -33,9 +35,13 @@ import java.nio.charset.StandardCharsets;
  * OncePerRequestFilter applies to every request reaching the embedded
  * Tomcat regardless of how the route itself was declared.
  *
- * Public routes skip validation entirely. Everything else needs a valid
- * Bearer token; on success, X-User-Id / X-User-Role are injected so
- * downstream services can trust them without re-validating the JWT.
+ * Public routes skip validation entirely — either unconditionally
+ * ({@code app.security.public-paths}) or for GET only
+ * ({@code app.security.public-get-paths}, e.g. catalog browsing, where
+ * mutating verbs on the same path still need a token). Everything else
+ * needs a valid Bearer token; on success, X-User-Id / X-User-Role are
+ * injected so downstream services can trust them without re-validating the
+ * JWT. See {@link SecurityProperties} for the matching rules.
  */
 @Component
 @RequiredArgsConstructor
@@ -45,6 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProperties jwtProperties;
     private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     // Built once at startup, not per request — this filter runs on every
     // request through the gateway, so rebuilding the key from the config
@@ -70,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         MutableHttpServletRequest wrapped = new MutableHttpServletRequest(request);
         wrapped.putHeader("X-Original-Path", path);
 
-        if (isPublic(path)) {
+        if (isPublic(path, request.getMethod())) {
             filterChain.doFilter(wrapped, response);
             return;
         }
@@ -100,8 +107,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    private boolean isPublic(String path) {
-        return securityProperties.getPublicPaths().contains(path) || path.startsWith("/actuator/");
+    private boolean isPublic(String path, String method) {
+        if (path.startsWith("/actuator/")) {
+            return true;
+        }
+        if (matchesAny(securityProperties.getPublicPaths(), path)) {
+            return true;
+        }
+        return "GET".equalsIgnoreCase(method) && matchesAny(securityProperties.getPublicGetPaths(), path);
+    }
+
+    private boolean matchesAny(List<String> patterns, String path) {
+        for (String pattern : patterns) {
+            if (pathMatcher.match(pattern, path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void reject(HttpServletResponse response, HttpServletRequest request, String message) throws IOException {
