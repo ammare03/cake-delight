@@ -62,8 +62,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
+        // Wrapped unconditionally, before the public/protected branch: every
+        // request forwarded downstream — public or authenticated — needs the
+        // original pre-StripPrefix path available so downstream error
+        // handlers (e.g. auth-service's GlobalExceptionHandler) can report
+        // the path the client actually called, not the internal one.
+        MutableHttpServletRequest wrapped = new MutableHttpServletRequest(request);
+        wrapped.putHeader("X-Original-Path", path);
+
         if (isPublic(path)) {
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(wrapped, response);
             return;
         }
 
@@ -82,7 +90,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .parseSignedClaims(token)
                     .getPayload();
 
-            MutableHttpServletRequest wrapped = new MutableHttpServletRequest(request);
             wrapped.putHeader("X-User-Id", claims.getSubject());
             wrapped.putHeader("X-User-Role", claims.get("role", String.class));
 
