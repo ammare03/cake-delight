@@ -4,6 +4,7 @@ target/
 *.jar
 *.war
 *.log
+*.stackdump
 .mvn/
 mvnw
 mvnw.cmd
