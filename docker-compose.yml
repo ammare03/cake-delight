@@ -19,5 +19,50 @@ services:
       timeout: 5s
       retries: 10
 
+  # Phase 4 (CLAUDE.md §7) — single-broker Kafka for the order.completed
+  # event. Zookeeper-mode, not KRaft, per the plan's explicit "Kafka +
+  # Zookeeper" task; a production setup would want a cluster, not this.
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: cake-delight-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: cake-delight-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    # Host port 9092 — conventional default, no known conflict on this
+    # machine. Adjust here and in every service's
+    # spring.kafka.bootstrap-servers (config-repo/application.properties)
+    # if your environment already has something bound to it.
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Two listeners: one for other containers on the compose network
+      # (kafka:29092), one for host processes — every Cake Delight service
+      # runs on the host, not in a container, until Phase 6.
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Single broker in local dev — replication factor 1 everywhere.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
 volumes:
   mysql-data:
