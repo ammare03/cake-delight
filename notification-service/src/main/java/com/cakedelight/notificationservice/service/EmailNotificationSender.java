@@ -40,7 +40,7 @@ public class EmailNotificationSender implements NotificationSender {
         if (event.userEmail() == null || event.userEmail().isBlank()) {
             // No email on the event (the checkout JWT had no "email"
             // claim) — nothing to send to. Thrown rather than silently
-            // skipped, so NotificationServiceImpl records this as FAILED
+            // skipped, so NotificationService records this as FAILED
             // instead of a false SENT.
             throw new IllegalStateException(
                     "Cannot send email notification for order " + event.orderId() + ": event has no userEmail");

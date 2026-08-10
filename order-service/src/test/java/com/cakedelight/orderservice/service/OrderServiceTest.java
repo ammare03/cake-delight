@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class OrderServiceImplTest {
+class OrderServiceTest {
 
     @Mock
     OrderRepository orderRepository;
@@ -49,7 +49,7 @@ class OrderServiceImplTest {
     ApplicationEventPublisher applicationEventPublisher;
 
     @InjectMocks
-    OrderServiceImpl orderService;
+    OrderService orderService;
 
     @Test
     void checkout_whenUserIdHeaderMissing_throwsUnauthenticatedException() {

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 // Every /orders/** route requires auth at the gateway (CLAUDE.md §4 doesn't
 // list any as public) — X-User-Id is always expected to be present here.
-// Parsing/validating it happens once, in BasketServiceImpl (mirrors
+// Parsing/validating it happens once, in BasketService (mirrors
 // rating-service's RatingService pattern) rather than being duplicated here.
 @RestController
 @RequestMapping("/orders/basket")

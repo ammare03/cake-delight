@@ -42,7 +42,7 @@ public class Notification {
     // its own §5.3 idempotency rule ("consumers must handle receiving the
     // same event twice ... check by eventId") — this is what that check is
     // actually done against. Unique at the DB level, not just re-checked in
-    // NotificationServiceImpl, same pattern as rating-service's duplicate
+    // NotificationService, same pattern as rating-service's duplicate
     // check on (cake_id, user_id).
     @Column(name = "event_id", nullable = false, length = 36)
     private String eventId;

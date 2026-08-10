@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceImplTest {
+class NotificationServiceTest {
 
     @Mock
     NotificationRepository notificationRepository;
@@ -42,7 +42,7 @@ class NotificationServiceImplTest {
 
     final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
-    NotificationServiceImpl notificationService;
+    NotificationService notificationService;
 
     private static final OrderCompletedEvent EVENT = new OrderCompletedEvent(
             "evt-1", "ORDER_COMPLETED", Instant.now(), 100L, 42L, "user@example.com",
@@ -50,7 +50,7 @@ class NotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationServiceImpl(notificationRepository, notificationMapper, notificationSender, objectMapper);
+        notificationService = new NotificationService(notificationRepository, notificationMapper, notificationSender, objectMapper);
     }
 
     @Test
