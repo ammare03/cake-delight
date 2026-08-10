@@ -56,5 +56,7 @@ config-repo/*-local.properties
 CLAUDE.md
 .claude/
 
-# Audit reports — local only, not committed
-docs/
+# Audit reports — local only, not committed. Narrower than docs/ itself:
+# graded deliverables (DL-2/DL-5/DL-6/DL-8 docs) belong in docs/ and must
+# be committed; only docs/audits/ is progress-tracking noise.
+docs/audits/
