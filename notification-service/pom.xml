@@ -43,6 +43,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
+        <!-- Real email sending (task #11) — JavaMailSender autoconfiguration,
+             wired to Gmail SMTP via config-repo/notification-service.properties.
+             No matching "-mail-test" starter exists in this Boot line; the
+             other "-test" starters already pull in JUnit5/Mockito, which is
+             all EmailNotificationSenderTest needs. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
