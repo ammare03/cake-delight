@@ -107,6 +107,26 @@ Phase 4 adds a single Kafka topic, `order.completed`, per CLAUDE.md §5.3 — `o
 - **Payload:** exact shape in CLAUDE.md §5.3 — `eventId`, `eventType`, `occurredAt`, `orderId`, `userId`, `userEmail`, `totalAmount`, `items[]`. Self-contained by design: `notification-service` never calls back to `order-service`/`catalog-service`/`auth-service` for anything it needs. Both sides keep their own copy of the record (`OrderCompletedEvent`) rather than sharing a JAR (CLAUDE.md §10).
 - **Config:** `spring.kafka.bootstrap-servers` and the topic name (`app.kafka.topics.order-completed`) live in the shared `config-repo/application.properties` since both services need the identical values; producer/consumer-specific settings (serializers, consumer group id) stay in each service's own `config-repo/<service>.properties`.
 
+## Real email notifications
+
+`notification-service` sends a real order-confirmation email over SMTP (Gmail, App Password auth) by default — the `LoggingNotificationSender` console-only behavior from earlier in Phase 4 is now an opt-in fallback, not the default. Which one runs is picked by `NotificationSender.channel()`/`app.notification.channel`; see `EmailNotificationSender`/`LoggingNotificationSender` in `notification-service`.
+
+**One-time account setup** (see `docs/audits` chat history for the full walkthrough — summarized here):
+1. Create a dedicated Gmail account for sending (this project uses `cakedelight.donotreply@gmail.com`) — don't reuse a personal account.
+2. Turn on **2-Step Verification** on that account (`myaccount.google.com/security`) — required before Gmail will issue an App Password.
+3. Generate an **App Password** (same page, search "App passwords") — a 16-character string, shown once. This, not the account's regular password, is what SMTP auth uses.
+
+**Local config — where the app password goes:**
+- `config-repo/notification-service.properties` holds `spring.mail.host`, `port`, `username` (the sender address — not a secret, committed as a literal default), and `spring.mail.password=${SMTP_PASSWORD:}` — the app password is **never** written into this file or committed. It's read from the `SMTP_PASSWORD` environment variable at runtime.
+- Set it before running `notification-service`:
+  - **IntelliJ:** Run/Debug Configurations → `NotificationServiceApplication` → Modify options → Environment variables → add `SMTP_PASSWORD=<the 16-character app password, spaces removed>`.
+  - **Shell (this session):** `$env:SMTP_PASSWORD = "xxxxxxxxxxxxxxxx"` (PowerShell) before starting the service in that same terminal — session-scoped, not persisted.
+- `SMTP_USERNAME` and `NOTIFICATION_CHANNEL` are optional overrides of the same shape, if the sending address or channel ever needs to change without editing `config-repo/`.
+
+**Falling back to log-only:** set `NOTIFICATION_CHANNEL=log` (or edit `app.notification.channel` in `config-repo/notification-service.properties`) to route through `LoggingNotificationSender` instead — no SMTP credentials needed, notifications are console-only and stored with `channel: "IN_APP"`.
+
+**Failure behavior:** if `SMTP_PASSWORD` is unset, wrong, or the SMTP host is unreachable, `EmailNotificationSender.send()` throws, and `NotificationServiceImpl` records the notification as `status: "FAILED"` (still stored, not silently dropped) rather than retrying — see `docs/db-schema.md`'s `notifications` table.
+
 ## Configuration
 
 All runtime config is centralized in `config-repo/`, served by `config-server`. Each service's own `src/main/resources/application.properties` holds only bootstrap essentials (app name, config-server URL) — everything else (ports, datasource, secrets, routes) lives in `config-repo/<service-name>.properties`. `config-server` and `eureka-server` are exceptions: they're foundational infrastructure that starts before anything else could usefully configure them, so their local `application.properties` holds their real settings directly (this is deliberate, not an oversight).
@@ -135,8 +155,8 @@ Run through this once all eight services are up (`config-server`, `eureka-server
 10. `PUT /api/orders/basket/items/{itemId}` with `{"quantity": 1}` — expect `200` and the updated quantity.
 11. `POST /api/orders/checkout` — expect `201`, an order with the right total, and the basket now empty (`GET /api/orders/basket` confirms).
 12. `GET /api/orders` and `GET /api/orders/{id}` — expect the order from step 11 in both.
-13. Watch `notification-service`'s console — expect a `Notification sent: order ... completed for user ...` log line shortly after checkout (Kafka delivery isn't instant, but should be well under a second locally).
-14. `GET /api/notifications` as the same user — expect one row, `status: "SENT"`, `channel: "IN_APP"` (real email is a tracked follow-up, not built yet — see `docs/audits` / project notes).
+13. Watch `notification-service`'s console — expect an `Email notification sent for order ... to ...` log line shortly after checkout (Kafka delivery isn't instant, but should be well under a second locally), and a real email arriving in the checkout user's inbox. If `SMTP_PASSWORD` isn't set locally, expect a `Failed to send notification for order ...` error log instead — see **Real email notifications** above; that's an expected result of missing credentials, not a bug.
+14. `GET /api/notifications` as the same user — expect one row, `channel: "EMAIL"`, `status: "SENT"` (or `"FAILED"` if SMTP credentials aren't configured locally — see step 13).
 15. Check `cake_delight_notification_db.notifications` directly — one row, `event_id` matching the order's checkout.
 16. `POST /api/ratings` again for the cake purchased in step 9/11 — expect `201` this time.
 17. Repeat step 16 for the same cake + same user — expect `409`.

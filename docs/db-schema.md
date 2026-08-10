@@ -146,14 +146,14 @@ Notes:
 | `user_id` | `BIGINT` | NOT NULL — references `auth-service`'s `users.id` by value only, no FK |
 | `order_id` | `BIGINT` | NOT NULL — references `order-service`'s `orders.id` by value only, no FK |
 | `event_id` | `VARCHAR(36)` | NOT NULL, UNIQUE — the source event's `eventId` (a UUID); not one of CLAUDE.md §5.2's literal columns, but required to satisfy §5.3's idempotency rule ("consumers must handle receiving the same event twice") |
-| `channel` | `VARCHAR(20)` | NOT NULL — enum: `EMAIL`, `SMS`, `IN_APP`. Currently always `IN_APP` — there's no real outbound send yet (see below), so labeling it `EMAIL`/`SMS` would claim a delivery that never happened |
-| `status` | `VARCHAR(20)` | NOT NULL — enum: `SENT`, `FAILED`. Set from whether `NotificationSender.send()` throws (`NotificationServiceImpl`) — a real code path, even though the only sender implementation today (`LoggingNotificationSender`) practically never throws |
+| `channel` | `VARCHAR(20)` | NOT NULL — enum: `EMAIL`, `SMS`, `IN_APP`. Set from `NotificationSender.channel()` (`NotificationServiceImpl`), so it always reflects which sender actually ran — `EMAIL` by default (`EmailNotificationSender`, real Gmail SMTP send), `IN_APP` if `app.notification.channel=log` selects the fallback (`LoggingNotificationSender`) instead |
+| `status` | `VARCHAR(20)` | NOT NULL — enum: `SENT`, `FAILED`. Set from whether `NotificationSender.send()` throws (`NotificationServiceImpl`) — a real code path; `EmailNotificationSender` throws on an actual SMTP failure (bad credentials, unreachable host, no `userEmail` on the event), which now makes `FAILED` empirically reachable, not just structurally possible |
 | `payload` | `TEXT` | NOT NULL — the full `order.completed` event, serialized as JSON |
 | `created_at` | `TIMESTAMP` | NOT NULL, set once at insert |
 
 Source: `notification-service/src/main/java/com/cakedelight/notificationservice/entity/Notification.java`
 
 Notes:
-- Consumes `order.completed` via `@KafkaListener` (`OrderCompletedListener`); "sending" a notification is logging to console and storing this row — no real email/SMS integration yet, per CLAUDE.md §5.2's explicit "(optional later enhancement)". Real email sending is planned as a tracked follow-up on top of this working base, not part of Phase 4 itself.
+- Consumes `order.completed` via `@KafkaListener` (`OrderCompletedListener`); "sending" a notification means routing through the active `NotificationSender` (`EmailNotificationSender` by default — a real Gmail SMTP send; `LoggingNotificationSender` as an opt-in console-only fallback via `app.notification.channel=log`) and storing this row either way. Real email was originally deferred past Phase 4 per CLAUDE.md §5.2's "(optional later enhancement)"; it's since been implemented as the tracked follow-up — see the README's **Real email notifications** section for account/config setup.
 - Idempotency: `existsByEventId()` is checked before inserting, and `event_id` is also unique at the DB level — a redelivered Kafka message is logged and skipped, not double-recorded (same belt-and-suspenders pattern as `rating-service`'s duplicate-rating check).
 - `GET /notifications` (token required) lists the current user's notifications — the "nice-to-have" endpoint CLAUDE.md §5.2 mentions.
