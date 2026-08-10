@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CakeServiceImplTest {
+class CakeServiceTest {
 
     @Mock
     CakeRepository cakeRepository;
@@ -34,7 +34,7 @@ class CakeServiceImplTest {
     CakeMapper cakeMapper;
 
     @InjectMocks
-    CakeServiceImpl cakeService;
+    CakeService cakeService;
 
     @Test
     void getCakeById_whenCakeExists_returnsMappedResponse() {

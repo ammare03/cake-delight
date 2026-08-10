@@ -24,4 +24,7 @@ public record ErrorResponse(
         return new ErrorResponse(Instant.now(), 400, "Bad Request", "VALIDATION_FAILED",
                 "Invalid request body", path, fieldErrors);
     }
+
+    /** One field-level validation failure. Nested here because it only ever appears inside this response. */
+    public record ValidationFieldError(String field, String message) {}
 }

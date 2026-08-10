@@ -1,7 +1,6 @@
 package com.cakedelight.ratingservice.exception;
 
 import com.cakedelight.ratingservice.dto.response.ErrorResponse;
-import com.cakedelight.ratingservice.dto.response.ValidationFieldError;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,8 +24,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
-        List<ValidationFieldError> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(f -> new ValidationFieldError(f.getField(), f.getDefaultMessage()))
+        List<ErrorResponse.ValidationFieldError> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(f -> new ErrorResponse.ValidationFieldError(f.getField(), f.getDefaultMessage()))
                 .toList();
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.validation(errors, resolvePath(req)));

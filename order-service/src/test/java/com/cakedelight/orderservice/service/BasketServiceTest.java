@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class BasketServiceImplTest {
+class BasketServiceTest {
 
     @Mock
     BasketRepository basketRepository;
@@ -47,7 +47,7 @@ class BasketServiceImplTest {
     BasketMapper basketMapper;
 
     @InjectMocks
-    BasketServiceImpl basketService;
+    BasketService basketService;
 
     private static final CakeResponse AVAILABLE_CAKE =
             new CakeResponse(1L, "Chocolate Truffle", "desc", "chocolate", new BigDecimal("500.00"), true, null, null);

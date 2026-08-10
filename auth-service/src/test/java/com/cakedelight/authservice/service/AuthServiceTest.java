@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AuthServiceImplTest {
+class AuthServiceTest {
 
     @Mock
     UserRepository userRepository;
@@ -43,7 +43,7 @@ class AuthServiceImplTest {
     JwtProperties jwtProperties;
 
     @InjectMocks
-    AuthServiceImpl authService;
+    AuthService authService;
 
     @Test
     void register_whenEmailAlreadyExists_throwsEmailAlreadyExistsException() {

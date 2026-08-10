@@ -11,14 +11,14 @@ import com.cakedelight.notificationservice.event.OrderCompletedEvent;
  * is the real channel (task #11) — active by default via
  * {@code app.notification.channel=email}; flip it to {@code log} to fall
  * back to console-only sending. Throwing from {@link #send} is how an
- * implementation reports a failed delivery — {@link NotificationServiceImpl}
+ * implementation reports a failed delivery — {@link NotificationService}
  * catches it and records {@code FAILED} instead of {@code SENT}.
  */
 public interface NotificationSender {
     void send(OrderCompletedEvent event);
 
     /**
-     * Which channel this sender represents, so {@link NotificationServiceImpl}
+     * Which channel this sender represents, so {@link NotificationService}
      * records an accurate {@code Notification.channel} instead of a
      * hardcoded literal that would misdescribe what was actually attempted.
      */

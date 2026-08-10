@@ -1,7 +1,7 @@
 package com.cakedelight.orderservice.entity;
 
 // Two states, not one: CREATED at persistence, COMPLETED once the checkout
-// transaction is guaranteed durable (OrderServiceImpl.checkout()). Checkout
+// transaction is guaranteed durable (OrderService.checkout()). Checkout
 // has no further fulfillment workflow to model (CLAUDE.md §12 — no payment
 // gateway, no shipping) so COMPLETED is the terminal state — but "maintain
 // order status" (CLAUDE.md §5.2) means the column has to actually move at

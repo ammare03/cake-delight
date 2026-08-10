@@ -13,7 +13,7 @@ import java.util.List;
 
 // Requires auth at the gateway, same as /orders/** and /ratings/** — not
 // listed as public in CLAUDE.md §4. Parsing/validating X-User-Id happens in
-// NotificationServiceImpl, same pattern as rating-service/order-service.
+// NotificationService, same pattern as rating-service/order-service.
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor

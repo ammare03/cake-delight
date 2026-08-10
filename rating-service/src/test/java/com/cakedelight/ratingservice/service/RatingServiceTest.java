@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RatingServiceImplTest {
+class RatingServiceTest {
 
     @Mock
     RatingRepository ratingRepository;
@@ -43,7 +43,7 @@ class RatingServiceImplTest {
     OrderClient orderClient;
 
     @InjectMocks
-    RatingServiceImpl ratingService;
+    RatingService ratingService;
 
     @Test
     void submitRating_whenUserIdHeaderMissing_throwsUnauthenticatedException() {
