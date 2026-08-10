@@ -46,7 +46,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setUserId(event.userId());
         notification.setOrderId(event.orderId());
         notification.setEventId(event.eventId());
-        notification.setChannel(NotificationChannel.IN_APP);
+        notification.setChannel(notificationSender.channel());
         notification.setPayload(toPayload(event));
 
         // Routed through the NotificationSender seam rather than logging
