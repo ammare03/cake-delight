@@ -30,4 +30,9 @@ public final class CakeSpecifications {
         return (root, query, cb) -> maxPrice == null ? null
                 : cb.lessThanOrEqualTo(root.get("price"), maxPrice);
     }
+
+    /** Unconditional, not a filter param — browse never shows unavailable cakes (CLAUDE.md §5.2, SD-C1). */
+    public static Specification<Cake> isAvailable() {
+        return (root, query, cb) -> cb.isTrue(root.get("available"));
+    }
 }

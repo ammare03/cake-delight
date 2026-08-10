@@ -34,7 +34,12 @@ public class CakeServiceImpl implements CakeService {
     @Override
     @Transactional(readOnly = true)
     public List<CakeResponse> search(String name, String category, BigDecimal minPrice, BigDecimal maxPrice) {
+        // isAvailable() is unconditional, not one of the optional name/category/
+        // price filters — browse never shows unavailable cakes (SD-C1). Admins
+        // still reach an unavailable cake directly via getCakeById/update/delete,
+        // which don't go through this specification.
         Specification<Cake> spec = Specification.allOf(
+                CakeSpecifications.isAvailable(),
                 CakeSpecifications.hasName(name),
                 CakeSpecifications.hasCategory(category),
                 CakeSpecifications.minPrice(minPrice),
