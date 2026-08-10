@@ -99,6 +99,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             wrapped.putHeader("X-User-Id", claims.getSubject());
             wrapped.putHeader("X-User-Role", claims.get("role", String.class));
+            // Phase 4: order-service embeds this in the order.completed event
+            // payload so notification-service is self-contained and never
+            // needs to call back to auth-service for it (CLAUDE.md §5.3).
+            wrapped.putHeader("X-User-Email", claims.get("email", String.class));
 
             filterChain.doFilter(wrapped, response);
         } catch (JwtException | IllegalArgumentException ex) {
