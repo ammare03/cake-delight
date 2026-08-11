@@ -1,6 +1,5 @@
-package com.cakedelight.ratingservice.client;
+package com.cakedelight.ratingservice.service;
 
-import com.cakedelight.ratingservice.client.dto.PurchaseCheckResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

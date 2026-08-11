@@ -1,12 +1,11 @@
 package com.cakedelight.catalogservice.service;
 
-import com.cakedelight.catalogservice.dto.request.CreateCakeRequest;
-import com.cakedelight.catalogservice.dto.request.UpdateCakeRequest;
-import com.cakedelight.catalogservice.dto.response.CakeResponse;
+import com.cakedelight.catalogservice.dto.CakeResponse;
+import com.cakedelight.catalogservice.dto.CreateCakeRequest;
+import com.cakedelight.catalogservice.dto.UpdateCakeRequest;
 import com.cakedelight.catalogservice.entity.Cake;
 import com.cakedelight.catalogservice.exception.CakeNotFoundException;
 import com.cakedelight.catalogservice.exception.ForbiddenException;
-import com.cakedelight.catalogservice.mapper.CakeMapper;
 import com.cakedelight.catalogservice.repository.CakeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,11 +30,22 @@ class CakeServiceTest {
     @Mock
     CakeRepository cakeRepository;
 
-    @Mock
-    CakeMapper cakeMapper;
-
     @InjectMocks
     CakeService cakeService;
+
+    @Test
+    void search_passesFiltersThroughToRepositoryAndMapsResults() {
+        Cake cake = new Cake();
+        cake.setId(1L);
+        cake.setName("Chocolate Truffle");
+        when(cakeRepository.search("choc", "chocolate", new BigDecimal("100"), new BigDecimal("500")))
+                .thenReturn(List.of(cake));
+
+        List<CakeResponse> result = cakeService.search("choc", "chocolate", new BigDecimal("100"), new BigDecimal("500"));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Chocolate Truffle");
+    }
 
     @Test
     void getCakeById_whenCakeExists_returnsMappedResponse() {
@@ -42,8 +53,6 @@ class CakeServiceTest {
         cake.setId(1L);
         cake.setName("Chocolate Truffle");
         when(cakeRepository.findById(1L)).thenReturn(Optional.of(cake));
-        when(cakeMapper.toResponse(cake)).thenReturn(
-                new CakeResponse(1L, "Chocolate Truffle", "desc", "chocolate", new BigDecimal("500.00"), true, null, null));
 
         CakeResponse result = cakeService.getCakeById(1L);
 
@@ -81,18 +90,16 @@ class CakeServiceTest {
     @Test
     void createCake_whenCallerIsAdmin_savesAndReturnsCake() {
         CreateCakeRequest request = new CreateCakeRequest("Cake", "desc", "chocolate", new BigDecimal("500.00"), true, null);
-        Cake toSave = new Cake();
-        Cake saved = new Cake();
-        saved.setId(1L);
-        when(cakeMapper.toEntity(request)).thenReturn(toSave);
-        when(cakeRepository.save(toSave)).thenReturn(saved);
-        when(cakeMapper.toResponse(saved)).thenReturn(
-                new CakeResponse(1L, "Cake", "desc", "chocolate", new BigDecimal("500.00"), true, null, null));
+        when(cakeRepository.save(any(Cake.class))).thenAnswer(inv -> {
+            Cake c = inv.getArgument(0);
+            c.setId(1L);
+            return c;
+        });
 
         CakeResponse result = cakeService.createCake(request, "ADMIN");
 
         assertThat(result.id()).isEqualTo(1L);
-        verify(cakeRepository).save(toSave);
+        assertThat(result.name()).isEqualTo("Cake");
     }
 
     @Test

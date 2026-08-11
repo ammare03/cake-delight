@@ -1,4 +1,4 @@
-package com.cakedelight.catalogservice.dto.response;
+package com.cakedelight.catalogservice.dto;
 
 import org.springframework.http.HttpStatus;
 

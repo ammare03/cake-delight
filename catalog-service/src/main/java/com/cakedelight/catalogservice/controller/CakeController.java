@@ -1,8 +1,8 @@
 package com.cakedelight.catalogservice.controller;
 
-import com.cakedelight.catalogservice.dto.request.CreateCakeRequest;
-import com.cakedelight.catalogservice.dto.request.UpdateCakeRequest;
-import com.cakedelight.catalogservice.dto.response.CakeResponse;
+import com.cakedelight.catalogservice.dto.CakeResponse;
+import com.cakedelight.catalogservice.dto.CreateCakeRequest;
+import com.cakedelight.catalogservice.dto.UpdateCakeRequest;
 import com.cakedelight.catalogservice.service.CakeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

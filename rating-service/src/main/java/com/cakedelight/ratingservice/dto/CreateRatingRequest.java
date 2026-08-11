@@ -1,4 +1,4 @@
-package com.cakedelight.ratingservice.dto.request;
+package com.cakedelight.ratingservice.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

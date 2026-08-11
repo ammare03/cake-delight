@@ -1,4 +1,4 @@
-package com.cakedelight.catalogservice.dto.request;
+package com.cakedelight.catalogservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

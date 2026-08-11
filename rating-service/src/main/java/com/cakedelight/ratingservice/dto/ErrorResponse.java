@@ -1,4 +1,4 @@
-package com.cakedelight.ratingservice.dto.response;
+package com.cakedelight.ratingservice.dto;
 
 import org.springframework.http.HttpStatus;
 

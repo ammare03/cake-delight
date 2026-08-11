@@ -1,7 +1,7 @@
 package com.cakedelight.ratingservice.controller;
 
-import com.cakedelight.ratingservice.dto.response.RatingResponse;
-import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
+import com.cakedelight.ratingservice.dto.RatingResponse;
+import com.cakedelight.ratingservice.dto.RatingSummaryResponse;
 import com.cakedelight.ratingservice.exception.DuplicateRatingException;
 import com.cakedelight.ratingservice.exception.GlobalExceptionHandler;
 import com.cakedelight.ratingservice.exception.UnauthenticatedException;
