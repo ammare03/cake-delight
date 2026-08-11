@@ -51,6 +51,14 @@ next-env.d.ts
 *.pem
 *.key
 
+# Phase 6 — real Kubernetes Secret manifests. The primary path is the
+# imperative `kubectl create secret` command in the README (nothing ever
+# touches disk), but if someone fills in the example YAML by hand instead,
+# it must never be committed. The *.example.yaml template (placeholder
+# values only) stays tracked.
+k8s/secrets/*.yaml
+!k8s/secrets/*.example.yaml
+
 # Docker
 *.pid
 

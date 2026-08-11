@@ -1,0 +1,74 @@
+# notification-service — SMTP_PASSWORD arrives via cake-delight-secrets
+# (envFrom below); if it's empty, NOTIFICATION_CHANNEL (from
+# cake-delight-env, default "log") keeps the flow demonstrable regardless —
+# see the root README's "Secrets" section.
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: cake-delight
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: cake-delight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: notification-service
+          image: cake-delight/notification-service:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: cake-delight-env
+            - secretRef:
+                name: cake-delight-secrets
+          ports:
+            - containerPort: 8085
+          # Gates readiness/liveness until the app has actually finished
+          # starting — see auth-service.yaml for the full rationale.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8085
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

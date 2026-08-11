@@ -1,0 +1,79 @@
+# api-gateway — the only business-facing service exposed outside the
+# cluster (NodePort 30090, an explicit fixed port rather than a random one
+# in the 30000-32767 range, so the README/DL-8 demo script can name a
+# stable URL: http://localhost:30090/api/...). Every other Spring service
+# in k8s/services/ is ClusterIP-only — matching DECISIONS.md D-4's trust
+# boundary: nothing but the gateway validates the JWT, so nothing but the
+# gateway may be reachable from outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: cake-delight
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: cake-delight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: api-gateway
+          image: cake-delight/api-gateway:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: cake-delight-env
+            - secretRef:
+                name: cake-delight-secrets
+          ports:
+            - containerPort: 9090
+          # Gates readiness/liveness until the app has actually finished
+          # starting — see auth-service.yaml for the full rationale.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

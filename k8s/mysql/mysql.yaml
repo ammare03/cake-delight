@@ -1,0 +1,109 @@
+# MySQL — Phase 6 (CLAUDE.md §7 calls for a StatefulSet specifically, since
+# it's the one component in this system that actually holds state).
+# Passwordless, same as local dev and Docker Compose — see the root
+# README's "Secrets" section for why this project deliberately doesn't add
+# a DB-password Secret at this scope.
+#
+# Schema init (docker/mysql-init/001-init-schemas.sql) is mirrored into the
+# ConfigMap below and mounted at /docker-entrypoint-initdb.d, same
+# mechanism Docker Compose uses via a bind mount. This file changes
+# essentially never (it only creates the five empty schemas), so — unlike
+# config-repo/ (see k8s/config/README.md) — hand-copying it here isn't a
+# meaningful drift risk.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init
+  namespace: cake-delight
+data:
+  001-init-schemas.sql: |
+    -- Creates one empty schema per Cake Delight microservice.
+    -- Prefixed with cake_delight_ so these never collide with unrelated schemas
+    -- on a shared MySQL/MariaDB instance. Mirrors docker/mysql-init/001-init-schemas.sql.
+    CREATE DATABASE IF NOT EXISTS cake_delight_auth_db         CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS cake_delight_catalog_db      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS cake_delight_order_db        CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS cake_delight_rating_db       CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS cake_delight_notification_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: cake-delight
+spec:
+  # Headless — StatefulSet pods get a stable DNS identity
+  # (mysql-0.mysql.cake-delight.svc.cluster.local), though every business
+  # service just uses the plain "mysql" Service name (DB_HOST in the shared
+  # ConfigMap), which still resolves via this Service.
+  clusterIP: None
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: cake-delight
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: mysql-init
+          configMap:
+            name: mysql-init
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

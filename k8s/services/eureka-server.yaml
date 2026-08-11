@@ -1,0 +1,70 @@
+# eureka-server — Phase 6. No config-server dependency to wait on (it reads
+# its own local application.properties, same as outside Docker — see
+# DECISIONS.md D-15), so it has no envFrom beyond nothing being needed yet;
+# kept explicit rather than omitted so every service manifest has the same
+# shape.
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka-server
+  namespace: cake-delight
+spec:
+  selector:
+    app: eureka-server
+  ports:
+    - port: 8761
+      targetPort: 8761
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-server
+  namespace: cake-delight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-server
+  template:
+    metadata:
+      labels:
+        app: eureka-server
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: eureka-server
+          image: cake-delight/eureka-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8761
+          # Gates readiness/liveness until the app has actually finished
+          # starting — see auth-service.yaml for the full rationale.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8761
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8761
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8761
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

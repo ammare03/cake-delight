@@ -2,18 +2,18 @@
 
 A cloud-native cake e-commerce app built as 8 Spring Boot microservices + a Next.js frontend. Capstone project — see `docs/audits/` for progress audits against the requirements.
 
-**Status:** Phases 1–5 complete and tested live end-to-end (see **Frontend (`frontend-service`)** below for the local/IDE walkthrough). Phase 6 containerization: the full stack (all 8 Spring services + `frontend-service`) now also builds and runs via Docker — one multi-stage `Dockerfile` per service plus a full `docker-compose.yml` — verified live end-to-end (register → browse → filter → basket → checkout → Kafka → notification → rating). See **Phase 6 — Docker & Kubernetes** below. Kubernetes deployment is next.
+**Status:** Phases 1–6 complete. Backend (1–4), frontend (5), and containerization + Kubernetes (6) all built and tested live end-to-end — the full flow (register → log in → browse/filter cakes → add to basket → update quantity → checkout → Kafka → notification recorded → rate a purchased cake → average updates) has been driven through the gateway in three environments: services running directly on the host, the full stack under Docker Compose, and the full stack deployed to Kubernetes (Docker Desktop). See **Frontend (`frontend-service`)** below for the local/IDE walkthrough, and **Phase 6 — Docker & Kubernetes** for the containerized ones.
 
 ## Prerequisites
 
 - JDK 17
 - Maven 3.9+ (each service also ships its own `mvnw` wrapper)
 - A MySQL-compatible server reachable locally (see **Local database** below) — needed from `auth-service` onward
-- Docker Desktop (for the bundled MySQL via `docker-compose`, and — from Phase 4 — Kafka + Zookeeper, needed by `order-service` and `notification-service`; from Phase 6, also for running the whole stack containerized — see **Phase 6 — Docker & Kubernetes** below)
+- Docker Desktop (for the bundled MySQL via `docker-compose`, and — from Phase 4 — Kafka + Zookeeper, needed by `order-service` and `notification-service`; from Phase 6, also for running the whole stack containerized and its built-in Kubernetes — see **Phase 6 — Docker & Kubernetes** below)
 - Node.js 20+ (for `frontend-service`)
-- IntelliJ IDEA (or any IDE with Spring Boot support) — only needed for the host/IDE-based workflow described in this section; Phase 6's Docker Compose workflow needs only Docker Desktop
+- IntelliJ IDEA (or any IDE with Spring Boot support) — only needed for the host/IDE-based workflow described in this section; Phase 6's Docker/Kubernetes workflow needs only Docker Desktop and `kubectl`
 
-**Note:** everything above **this line** describes running each service directly on the host (via IDE or `mvn spring-boot:run`) — Phases 1–5's original workflow, still fully supported. For running the whole stack containerized, skip to **Phase 6 — Docker & Kubernetes** near the end of this file — it needs only Docker Desktop, not a JDK/Maven/Node install on the host.
+**Note:** everything above **this line** describes running each service directly on the host (via IDE or `mvn spring-boot:run`) — Phases 1–5's original workflow, still fully supported. For running the whole stack containerized (Docker Compose) or in Kubernetes, skip to **Phase 6 — Docker & Kubernetes** near the end of this file — it needs only Docker Desktop, not a JDK/Maven/Node install on the host.
 
 ## Services and ports
 
@@ -180,27 +180,98 @@ Run through this once all eight services are up (`config-server`, `eureka-server
 
 ## Phase 6 — Docker & Kubernetes
 
-Every service (the 8 Spring services + `frontend-service`) has its own multi-stage `Dockerfile` (build stage brings its own Maven/Node — no host build required) and `.dockerignore`. `docker-compose.yml` runs the whole stack containerized. Every service's config now reads `CONFIG_SERVER_HOST`, `EUREKA_URL`, `DB_HOST`/`DB_PORT`, and `KAFKA_BOOTSTRAP_SERVERS` from the environment — the same `${VAR:default}` pattern already used for `JWT_SECRET`/`SMTP_PASSWORD` — so the same code and config run unchanged whether a service is started on the host or inside a container; only the environment values differ.
+Every service (the 8 Spring services + `frontend-service`) has its own multi-stage `Dockerfile` (build stage brings its own Maven/Node — no host build required) and `.dockerignore`. `docker-compose.yml` runs the whole stack containerized; `k8s/` deploys the same images to Kubernetes (built and tested against **Docker Desktop's built-in Kubernetes**). Both targets read the exact same `config-repo/` and the exact same `${VAR:default}` environment-variable pattern already used for `JWT_SECRET`/`SMTP_PASSWORD` (see **Secrets** below) — extended to `CONFIG_SERVER_HOST`, `EUREKA_URL`, `DB_HOST`/`DB_PORT`, `KAFKA_BOOTSTRAP_SERVERS`, and `FRONTEND_ORIGIN` so the same code and config run unchanged on the host, in Compose, and in-cluster.
 
 > **Windows + OneDrive note:** if this repo lives under a OneDrive-synced folder (as the author's dev machine does), Docker's default BuildKit builder fails with `ERROR: invalid file request <file>` — a known interaction between BuildKit's lazy file-transfer protocol and OneDrive's placeholder files. The legacy builder doesn't hit this. Every build command below sets `DOCKER_BUILDKIT=0` (and `COMPOSE_DOCKER_CLI_BUILD=0` for Compose) for that reason. If your clone isn't under OneDrive, these are harmless no-ops and can be dropped.
-
-### Secrets — running this independently of the author
-
-`JWT_SECRET` is the one secret Docker Compose needs, and it's self-contained: only `auth-service` (issues tokens) and `api-gateway` (verifies them) need to agree on the value; nothing external ever checks it, so any sufficiently random string works. Put it in `.env` (git-ignored; `.env.example` documents the variable). If `.env` is missing entirely, `config-repo/application.properties`'s own loud, obviously-insecure placeholder default still lets the stack boot and work — no setup step is required to see the app run.
-
-`SMTP_PASSWORD` (real Gmail credential, optional — see **Real email notifications** above) works the same way here as it does on the host: set it in `.env` for real email, or leave it unset and set `NOTIFICATION_CHANNEL=log` to fall back to `LoggingNotificationSender` — the full order → notification flow still works either way.
 
 ### Docker Compose
 
 ```sh
-cp .env.example .env
+cp .env.example .env        # see "Secrets" below before editing this
 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose up -d
 ```
 
 MySQL, Kafka, and Zookeeper come up first (existing Phase 4 healthchecks), then `config-server` and `eureka-server`, then the five business services, then `api-gateway`, then `frontend-service` — `depends_on`/`condition: service_healthy` in `docker-compose.yml` enforces this order automatically; no manual sequencing needed, unlike running services individually on the host. Once everything is `Up (healthy)` (`docker compose ps`), the app is reachable at the same URLs as local dev: gateway on `http://localhost:9090`, frontend on `http://localhost:3000`. `docker compose logs -f <service>` for any single service's logs; `docker compose down` to stop (add `-v` to also drop the MySQL volume).
 
-Each service's image is tagged `cake-delight/<service>:latest` (set via `image:` in `docker-compose.yml`) — this naming is deliberate and reused by the Kubernetes deployment documented in a follow-up commit.
+Each service's image is tagged `cake-delight/<service>:latest` (set via `image:` in `docker-compose.yml`) — the same tags the Kubernetes manifests reference, so `docker compose build` doubles as the image build step for Kubernetes too, with one exception (`frontend-service` — see below).
+
+### Kubernetes (Docker Desktop)
+
+Prerequisite: Docker Desktop's Kubernetes enabled (Settings → Kubernetes → Enable Kubernetes), `kubectl config current-context` reporting `docker-desktop`. No `minikube`/`kind` image-loading step is needed — Docker Desktop's Kubernetes shares the same image cache as `docker build`, so an image built on the host is immediately usable by the cluster (`imagePullPolicy: IfNotPresent` in every manifest is what makes this work, instead of trying to pull from a registry).
+
+**If the Docker Compose stack is already running, stop it first** (`docker compose stop`) — both targets run on the same Docker Desktop VM and will otherwise compete for the same memory, which is exactly what caused repeated `OOMKilled` pods during this project's own Phase 6 deployment (see the troubleshooting note below).
+
+```sh
+# 1. Build the 8 Spring images (reuses docker-compose.yml's image: tags)
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
+
+# 2. Rebuild frontend-service specifically for Kubernetes — NEXT_PUBLIC_API_BASE_URL
+#    is baked in at build time (a Next.js constraint, not a Cake Delight choice — see
+#    frontend-service/Dockerfile's comment), and the gateway's Kubernetes NodePort
+#    (30090, below) differs from Compose's host port mapping (9090).
+DOCKER_BUILDKIT=0 docker build \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:30090/api \
+  -t cake-delight/frontend-service:latest ./frontend-service
+
+# 3. Namespace, then the config-repo ConfigMap (generated, not committed — see
+#    k8s/config/README.md for why) and the shared env ConfigMap
+kubectl apply -f k8s/namespace.yaml
+kubectl create configmap cake-delight-config-repo --from-file=config-repo/ -n cake-delight
+kubectl apply -f k8s/config/env-configmap.yaml -n cake-delight
+
+# 4. Secrets — see "Secrets" below before running this
+kubectl create secret generic cake-delight-secrets \
+  --from-literal=JWT_SECRET="$(openssl rand -base64 32)" \
+  --from-literal=SMTP_PASSWORD="" \
+  -n cake-delight
+
+# 5. MySQL, then Kafka/Zookeeper
+kubectl apply -f k8s/mysql/mysql.yaml -n cake-delight
+kubectl apply -f k8s/kafka/kafka.yaml -n cake-delight
+
+# 6. config-server and eureka-server — wait for both healthy before continuing
+kubectl apply -f k8s/services/config-server.yaml -n cake-delight
+kubectl apply -f k8s/services/eureka-server.yaml -n cake-delight
+kubectl rollout status deployment/config-server -n cake-delight
+kubectl rollout status deployment/eureka-server -n cake-delight
+
+# 7. The five business services
+kubectl apply -f k8s/services/auth-service.yaml -n cake-delight
+kubectl apply -f k8s/services/catalog-service.yaml -n cake-delight
+kubectl apply -f k8s/services/order-service.yaml -n cake-delight
+kubectl apply -f k8s/services/rating-service.yaml -n cake-delight
+kubectl apply -f k8s/services/notification-service.yaml -n cake-delight
+
+# 8. api-gateway, then frontend-service
+kubectl apply -f k8s/services/api-gateway.yaml -n cake-delight
+kubectl apply -f k8s/services/frontend-service.yaml -n cake-delight
+```
+
+Verify: `kubectl get pods -n cake-delight` — everything `1/1 Running`. `catalog-service` runs at **2 replicas** (the rest at 1) to demonstrate statelessness — neither replica holds any in-memory state, matching the basket-in-a-database design from Phase 4. The app is then reachable at fixed NodePorts (chosen deliberately, not the random 30000–32767 Kubernetes would otherwise assign, so the URLs below are stable across redeploys): gateway at `http://localhost:30090/api/...`, frontend at `http://localhost:30300`. Only these two Services are `NodePort`; every other service (business services, MySQL, Kafka, Zookeeper, config-server, eureka-server) is `ClusterIP`-only — the same trust-boundary rule as local dev (nothing but the gateway is meant to be reachable from outside), now actually enforced by the cluster rather than just documented.
+
+Teardown: `kubectl delete namespace cake-delight` (drops everything, including the MySQL PVC).
+
+**Troubleshooting notes, from this project's own first deployment** (each is a comment in the relevant manifest too, so a future reader hits the explanation in context, not just here):
+- **A Service named `kafka` breaks `cp-kafka`.** Kubernetes auto-injects legacy `<SERVICE>_PORT` env vars into every pod for every Service that exists — so a Service literally named `kafka` injects `KAFKA_PORT=tcp://<ip>:9092`, which collides with `cp-kafka`'s own env-to-config mapping and crashes the broker instantly. Fixed with `enableServiceLinks: false` on every pod spec in this project (not just Kafka's) — harmless everywhere, since nothing here relies on that legacy mechanism.
+- **Don't use an exec probe that spawns a JVM.** Kafka's readiness probe originally ran `kafka-broker-api-versions`, which starts a second, throwaway JVM admin client on every single probe — stacking real memory on top of the broker's own JVM inside the same container limit, repeatedly triggering `OOMKilled`. A `tcpSocket` probe (confirms the listener is accepting connections, nothing more) fixed it at effectively zero cost.
+- **Slow-starting JVMs need a `startupProbe`, not just a lenient `livenessProbe`.** With several Spring Boot services starting concurrently, CPU contention pushed real startup time past what the `livenessProbe`'s `initialDelaySeconds` tolerated — kubelet killed pods that were still legitimately (if slowly) booting, forever restarting them just before they would have finished. A `startupProbe` on every service (generous grace period; `livenessProbe`/`readinessProbe` are suppressed entirely until it succeeds once) fixed it.
+- **`spring-boot-starter-mail` auto-configures a health check that can take down the whole app's status.** Spring Boot wires a `MailHealthIndicator` into the aggregate `/actuator/health` response automatically whenever `spring.mail.*` properties are present — so with `SMTP_PASSWORD` unset (the whole point of the `NOTIFICATION_CHANNEL=log` fallback below), `/actuator/health` reported `DOWN`, which every readiness/liveness/startup probe in this project checks. `management.health.mail.enabled=false` (`config-repo/notification-service.properties`) fixed it — the per-notification `SENT`/`FAILED` outcome already recorded by `NotificationSender` (Phase 4) is the correct place for "could we reach Gmail?" to live, not the app's own aggregate health.
+- **JVM memory limits need headroom above steady-state usage.** A Spring Boot service's startup phase (class loading, JIT warmup) spikes well above what it settles at afterward — the original `512Mi` limit was fine at rest but caused `OOMKilled` during startup under concurrent load. Every Spring service's limit is `768Mi` (request `384Mi`) for this reason; Kafka's is `1536Mi` with an explicit `KAFKA_HEAP_OPTS=-Xmx512M -Xms512M` so its JVM doesn't sit right at the edge of the container limit.
+
+### Secrets — running this independently of the author
+
+Two secrets exist in this project (`JWT_SECRET`, `SMTP_PASSWORD`), and they are **fundamentally different in kind** — which is why an evaluator cloning this repo doesn't need anything from the author to run it end to end.
+
+**`JWT_SECRET` — self-contained, safe for anyone to generate their own.** Only `auth-service` (issues tokens) and `api-gateway` (verifies them) need to agree on the value; nothing external ever checks it, so any sufficiently random string works.
+- Docker Compose: put it in `.env` (git-ignored; `.env.example` documents the variable). If `.env` is missing entirely, `config-repo/application.properties`'s own loud, obviously-insecure placeholder default still lets the stack boot and work.
+- Kubernetes: generated inline in the `kubectl create secret` command above (`openssl rand -base64 32`) — nothing is ever written to disk.
+
+**`SMTP_PASSWORD` — a real external credential, and cannot be fabricated.** It's the Gmail App Password for the project's own dedicated sending account (`cakedelight.donotreply@gmail.com`) — see **Real email notifications** above for how the author obtained it. It shouldn't be committed, and it isn't reasonable to hand it to anyone else. The `NotificationSender` seam (Phase 4) exists for exactly this situation:
+- **Running your own graded demo?** Put your *own* real `SMTP_PASSWORD` in `.env` (Compose) or your own `kubectl create secret ... --from-literal=SMTP_PASSWORD=...` (Kubernetes), and set `NOTIFICATION_CHANNEL=email`. Real Gmail messages go out, exactly like running the services directly on the host.
+- **Evaluating this independently, with no access to that Gmail account?** Leave `SMTP_PASSWORD` unset and `NOTIFICATION_CHANNEL=log` (the default in both `.env.example` and the Kubernetes `cake-delight-env` ConfigMap) — `LoggingNotificationSender` takes over. The full order → notification flow still works and is still fully visible (`GET /api/notifications`, the frontend's notifications page, `channel: "IN_APP"`, `status: "SENT"`) — nothing about FS-7/EV-7 depends on a real email actually arriving.
+
+**Net result: zero secrets are required to run the project end to end.** `SMTP_PASSWORD` is the one optional secret that upgrades an already-working demo to send real email.
 
 ## Tech stack
 

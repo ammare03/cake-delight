@@ -1,0 +1,81 @@
+# config-server — Phase 6. The one service in k8s/services/ that mounts a
+# ConfigMap volume (cake-delight-config-repo — see k8s/config/README.md for
+# why that ConfigMap is generated rather than committed) instead of just
+# using envFrom; CONFIG_REPO_PATH points config-server's own
+# search-locations at the mounted path.
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: cake-delight
+spec:
+  selector:
+    app: config-server
+  ports:
+    - port: 8888
+      targetPort: 8888
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  namespace: cake-delight
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: config-server
+          image: cake-delight/config-server:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CONFIG_REPO_PATH
+              value: /config-repo
+          ports:
+            - containerPort: 8888
+          volumeMounts:
+            - name: config-repo
+              mountPath: /config-repo
+              readOnly: true
+          # Gates readiness/liveness until the app has actually finished
+          # starting — see auth-service.yaml for the full rationale.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8888
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+      volumes:
+        - name: config-repo
+          configMap:
+            name: cake-delight-config-repo

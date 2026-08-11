@@ -1,0 +1,76 @@
+# catalog-service — the one service scaled to 2 replicas (phase-gates.md's
+# Phase 6 guidance): stateless and read-heavy, so it's the cheapest,
+# clearest way to demonstrate AR-7/EV-5 statelessness — the in-memory-basket
+# antipattern this project deliberately avoids (basket lives in
+# order-service's database, not a JVM map) would break instantly under 2
+# replicas if it existed here.
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  namespace: cake-delight
+spec:
+  selector:
+    app: catalog-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  namespace: cake-delight
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: catalog-service
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: catalog-service
+          image: cake-delight/catalog-service:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: cake-delight-env
+            - secretRef:
+                name: cake-delight-secrets
+          ports:
+            - containerPort: 8082
+          # Gates readiness/liveness until the app has actually finished
+          # starting — see auth-service.yaml for the full rationale.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
