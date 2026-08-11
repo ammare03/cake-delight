@@ -1,7 +1,5 @@
 package com.cakedelight.apigateway.security;
 
-import com.cakedelight.apigateway.config.JwtProperties;
-import com.cakedelight.apigateway.config.SecurityProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,10 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -24,7 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 // GET-only public paths are a Phase 3 addition (catalog browsing public,
-// admin mutations on the same path still gated) — see SecurityProperties.
+// admin mutations on the same path still gated) — app.security.public-get-paths.
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class JwtAuthenticationFilterTest {
@@ -42,19 +40,17 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        JwtProperties jwtProperties = new JwtProperties();
-        jwtProperties.setSecret("test-only-signing-secret-at-least-32-bytes-long");
-
-        SecurityProperties securityProperties = new SecurityProperties();
-        securityProperties.setPublicPaths(List.of("/api/auth/register", "/api/auth/login"));
-        securityProperties.setPublicGetPaths(List.of("/api/catalog/cakes/**"));
-
         // findAndRegisterModules() picks up jackson-datatype-jsr310 (on the
         // classpath transitively via spring-boot-starter-json) so ErrorResponse's
         // Instant timestamp serializes — matching what Spring's auto-configured
         // ObjectMapper bean does for real in the running app.
-        filter = new JwtAuthenticationFilter(jwtProperties, securityProperties, new ObjectMapper().findAndRegisterModules());
-        filter.init();
+        filter = new JwtAuthenticationFilter(new ObjectMapper().findAndRegisterModules());
+
+        // The filter's @Value fields are normally populated by Spring; set them
+        // directly here since this is a plain Mockito unit test, not a Spring context test.
+        ReflectionTestUtils.setField(filter, "secret", "test-only-signing-secret-at-least-32-bytes-long");
+        ReflectionTestUtils.setField(filter, "publicPaths", new String[] {"/api/auth/register", "/api/auth/login"});
+        ReflectionTestUtils.setField(filter, "publicGetPaths", new String[] {"/api/catalog/cakes/**"});
 
         when(response.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
     }
