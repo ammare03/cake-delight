@@ -29,7 +29,9 @@ HELP.md
 .DS_Store
 Thumbs.db
 
-# Node / Next.js
+# Node / Next.js — same "monorepo uses this root .gitignore instead" reasoning
+# as the Spring Initializr boilerplate above; frontend-service's own
+# create-next-app-generated .gitignore was deleted in favor of this.
 node_modules/
 .next/
 out/
@@ -38,6 +40,10 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
+.vercel
 
 # Env / secrets
 .env

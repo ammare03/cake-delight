@@ -101,4 +101,20 @@ class JwtAuthenticationFilterTest {
         verify(filterChain, never()).doFilter(any(), any());
         verify(response).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
+
+    // Phase 5 regression: frontend-service is a cross-origin caller now
+    // (CorsConfig), and browsers never attach an Authorization header to a
+    // CORS preflight — rejecting OPTIONS here would 401 the preflight and
+    // silently block the real request on every protected route, not just
+    // this one path.
+    @Test
+    void doFilter_optionsOnProtectedPath_withNoToken_isAllowedThrough() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/orders/basket");
+        when(request.getMethod()).thenReturn("OPTIONS");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(any(), any());
+        verify(response, never()).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    }
 }
