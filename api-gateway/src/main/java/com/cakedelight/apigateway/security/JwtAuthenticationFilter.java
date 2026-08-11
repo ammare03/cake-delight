@@ -77,7 +77,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         MutableHttpServletRequest wrapped = new MutableHttpServletRequest(request);
         wrapped.putHeader("X-Original-Path", path);
 
-        if (isPublic(path, request.getMethod())) {
+        // CORS preflight (Phase 5 — frontend-service is a cross-origin
+        // caller now, see CorsConfig) must never require a token: browsers
+        // send OPTIONS without credentials or an Authorization header by
+        // design, on every path, not just the public ones. This servlet
+        // Filter runs ahead of DispatcherServlet, so without this check
+        // every preflight for a protected path (i.e. anything but
+        // register/login) would 401 here before Spring MVC's own CORS
+        // handling (registered via CorsConfig's addCorsMappings) ever got a
+        // chance to answer it — silently breaking the *actual* request too,
+        // since browsers refuse to send it after a failed preflight. Not a
+        // security hole: this filter still never forwards OPTIONS anywhere
+        // that performs a mutation, since it carries no body.
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublic(path, request.getMethod())) {
             filterChain.doFilter(wrapped, response);
             return;
         }
