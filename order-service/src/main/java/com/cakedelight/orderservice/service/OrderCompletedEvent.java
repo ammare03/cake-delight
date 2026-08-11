@@ -1,4 +1,4 @@
-package com.cakedelight.orderservice.event;
+package com.cakedelight.orderservice.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;

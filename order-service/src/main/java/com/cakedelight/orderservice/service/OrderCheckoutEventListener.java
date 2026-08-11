@@ -1,4 +1,4 @@
-package com.cakedelight.orderservice.event;
+package com.cakedelight.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

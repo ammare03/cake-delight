@@ -1,12 +1,10 @@
 package com.cakedelight.notificationservice.service;
 
-import com.cakedelight.notificationservice.dto.response.NotificationResponse;
+import com.cakedelight.notificationservice.dto.NotificationResponse;
 import com.cakedelight.notificationservice.entity.Notification;
 import com.cakedelight.notificationservice.entity.NotificationChannel;
 import com.cakedelight.notificationservice.entity.NotificationStatus;
-import com.cakedelight.notificationservice.event.OrderCompletedEvent;
 import com.cakedelight.notificationservice.exception.UnauthenticatedException;
-import com.cakedelight.notificationservice.mapper.NotificationMapper;
 import com.cakedelight.notificationservice.repository.NotificationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,9 +33,6 @@ class NotificationServiceTest {
     NotificationRepository notificationRepository;
 
     @Mock
-    NotificationMapper notificationMapper;
-
-    @Mock
     NotificationSender notificationSender;
 
     final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
@@ -50,7 +45,7 @@ class NotificationServiceTest {
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(notificationRepository, notificationMapper, notificationSender, objectMapper);
+        notificationService = new NotificationService(notificationRepository, notificationSender, objectMapper);
     }
 
     @Test
@@ -111,9 +106,11 @@ class NotificationServiceTest {
     void listNotifications_returnsMappedResponses() {
         Notification notification = new Notification();
         notification.setId(1L);
+        notification.setOrderId(100L);
+        notification.setChannel(NotificationChannel.IN_APP);
+        notification.setStatus(NotificationStatus.SENT);
+        notification.setPayload("{}");
         when(notificationRepository.findByUserId(42L)).thenReturn(List.of(notification));
-        when(notificationMapper.toResponse(notification)).thenReturn(
-                new NotificationResponse(1L, 100L, "IN_APP", "SENT", "{}", Instant.now()));
 
         List<NotificationResponse> result = notificationService.listNotifications("42");
 

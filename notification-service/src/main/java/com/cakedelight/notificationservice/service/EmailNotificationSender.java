@@ -1,7 +1,6 @@
 package com.cakedelight.notificationservice.service;
 
 import com.cakedelight.notificationservice.entity.NotificationChannel;
-import com.cakedelight.notificationservice.event.OrderCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

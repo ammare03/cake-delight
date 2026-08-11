@@ -1,4 +1,4 @@
-package com.cakedelight.orderservice.client.dto;
+package com.cakedelight.orderservice.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;

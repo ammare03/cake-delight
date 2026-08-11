@@ -1,10 +1,8 @@
 package com.cakedelight.orderservice.service;
 
-import com.cakedelight.orderservice.client.CatalogClient;
-import com.cakedelight.orderservice.client.dto.CakeResponse;
-import com.cakedelight.orderservice.dto.request.AddBasketItemRequest;
-import com.cakedelight.orderservice.dto.request.UpdateBasketItemRequest;
-import com.cakedelight.orderservice.dto.response.BasketResponse;
+import com.cakedelight.orderservice.dto.AddBasketItemRequest;
+import com.cakedelight.orderservice.dto.BasketResponse;
+import com.cakedelight.orderservice.dto.UpdateBasketItemRequest;
 import com.cakedelight.orderservice.entity.Basket;
 import com.cakedelight.orderservice.entity.BasketItem;
 import com.cakedelight.orderservice.exception.BasketItemNotFoundException;
@@ -12,12 +10,10 @@ import com.cakedelight.orderservice.exception.CakeNotFoundException;
 import com.cakedelight.orderservice.exception.CakeUnavailableException;
 import com.cakedelight.orderservice.exception.CatalogUnavailableException;
 import com.cakedelight.orderservice.exception.UnauthenticatedException;
-import com.cakedelight.orderservice.mapper.BasketMapper;
 import com.cakedelight.orderservice.repository.BasketRepository;
 import feign.FeignException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,7 +24,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,9 +37,6 @@ class BasketServiceTest {
 
     @Mock
     CatalogClient catalogClient;
-
-    @Mock
-    BasketMapper basketMapper;
 
     @InjectMocks
     BasketService basketService;
@@ -100,20 +92,14 @@ class BasketServiceTest {
         when(catalogClient.getCake(1L)).thenReturn(AVAILABLE_CAKE);
         when(basketRepository.findByUserId(42L)).thenReturn(Optional.empty());
         when(basketRepository.save(any(Basket.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(basketMapper.toResponse(any(Basket.class))).thenReturn(
-                new BasketResponse(1L, 42L, java.util.List.of(), BigDecimal.ZERO));
 
-        basketService.addItem("42", request);
+        BasketResponse result = basketService.addItem("42", request);
 
-        ArgumentCaptor<Basket> captor = ArgumentCaptor.forClass(Basket.class);
-        verify(basketMapper).toResponse(captor.capture());
-        Basket saved = captor.getValue();
-        assertThat(saved.getItems()).hasSize(1);
-        BasketItem item = saved.getItems().get(0);
-        assertThat(item.getCakeId()).isEqualTo(1L);
-        assertThat(item.getCakeNameSnapshot()).isEqualTo("Chocolate Truffle");
-        assertThat(item.getUnitPriceSnapshot()).isEqualByComparingTo("500.00");
-        assertThat(item.getQuantity()).isEqualTo(2);
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().get(0).cakeId()).isEqualTo(1L);
+        assertThat(result.items().get(0).cakeName()).isEqualTo("Chocolate Truffle");
+        assertThat(result.items().get(0).unitPrice()).isEqualByComparingTo("500.00");
+        assertThat(result.items().get(0).quantity()).isEqualTo(2);
     }
 
     @Test
@@ -134,8 +120,6 @@ class BasketServiceTest {
         when(catalogClient.getCake(1L)).thenReturn(AVAILABLE_CAKE);
         when(basketRepository.findByUserId(42L)).thenReturn(Optional.of(basket));
         when(basketRepository.save(basket)).thenReturn(basket);
-        when(basketMapper.toResponse(basket)).thenReturn(
-                new BasketResponse(10L, 42L, java.util.List.of(), BigDecimal.ZERO));
 
         basketService.addItem("42", request);
 
@@ -159,13 +143,14 @@ class BasketServiceTest {
         BasketItem item = new BasketItem();
         item.setId(5L);
         item.setBasket(basket);
+        item.setCakeId(1L);
+        item.setCakeNameSnapshot("Cake");
+        item.setUnitPriceSnapshot(BigDecimal.TEN);
         item.setQuantity(1);
         basket.getItems().add(item);
 
         when(basketRepository.findByUserId(42L)).thenReturn(Optional.of(basket));
         when(basketRepository.save(basket)).thenReturn(basket);
-        when(basketMapper.toResponse(basket)).thenReturn(
-                new BasketResponse(10L, 42L, java.util.List.of(), BigDecimal.ZERO));
 
         basketService.updateItem("42", 5L, new UpdateBasketItemRequest(10));
 
@@ -193,8 +178,6 @@ class BasketServiceTest {
     void getBasket_whenNoBasketExistsYet_createsOne() {
         when(basketRepository.findByUserId(42L)).thenReturn(Optional.empty());
         when(basketRepository.save(any(Basket.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(basketMapper.toResponse(any(Basket.class))).thenReturn(
-                new BasketResponse(1L, 42L, java.util.List.of(), BigDecimal.ZERO));
 
         BasketResponse result = basketService.getBasket("42");
 

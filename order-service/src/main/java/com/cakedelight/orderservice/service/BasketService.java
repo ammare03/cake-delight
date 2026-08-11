@@ -1,10 +1,8 @@
 package com.cakedelight.orderservice.service;
 
-import com.cakedelight.orderservice.client.CatalogClient;
-import com.cakedelight.orderservice.client.dto.CakeResponse;
-import com.cakedelight.orderservice.dto.request.AddBasketItemRequest;
-import com.cakedelight.orderservice.dto.request.UpdateBasketItemRequest;
-import com.cakedelight.orderservice.dto.response.BasketResponse;
+import com.cakedelight.orderservice.dto.AddBasketItemRequest;
+import com.cakedelight.orderservice.dto.BasketResponse;
+import com.cakedelight.orderservice.dto.UpdateBasketItemRequest;
 import com.cakedelight.orderservice.entity.Basket;
 import com.cakedelight.orderservice.entity.BasketItem;
 import com.cakedelight.orderservice.exception.BasketItemNotFoundException;
@@ -12,7 +10,6 @@ import com.cakedelight.orderservice.exception.CakeNotFoundException;
 import com.cakedelight.orderservice.exception.CakeUnavailableException;
 import com.cakedelight.orderservice.exception.CatalogUnavailableException;
 import com.cakedelight.orderservice.exception.UnauthenticatedException;
-import com.cakedelight.orderservice.mapper.BasketMapper;
 import com.cakedelight.orderservice.repository.BasketRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +24,10 @@ public class BasketService {
 
     private final BasketRepository basketRepository;
     private final CatalogClient catalogClient;
-    private final BasketMapper basketMapper;
 
     @Transactional
     public BasketResponse getBasket(String rawUserId) {
-        return basketMapper.toResponse(getOrCreateBasket(parseUserId(rawUserId)));
+        return BasketResponse.from(getOrCreateBasket(parseUserId(rawUserId)));
     }
 
     @Transactional
@@ -63,7 +59,7 @@ public class BasketService {
 
         Basket saved = basketRepository.save(basket);
         log.info("User {} added cake {} x{} to basket", userId, request.cakeId(), request.quantity());
-        return basketMapper.toResponse(saved);
+        return BasketResponse.from(saved);
     }
 
     @Transactional
@@ -72,7 +68,7 @@ public class BasketService {
         item.setQuantity(request.quantity());
         Basket saved = basketRepository.save(item.getBasket());
         log.info("Set quantity of basket item {} to {}", itemId, request.quantity());
-        return basketMapper.toResponse(saved);
+        return BasketResponse.from(saved);
     }
 
     @Transactional
@@ -113,9 +109,8 @@ public class BasketService {
 
     // Resolves the cake through catalog-service and enforces the same
     // "unavailable cakes are excluded" rule catalog-service's own browse
-    // endpoint applies (M1, Phase 3 audit) — a cake can still be fetched
-    // directly by id even when unavailable, so this has to be checked here
-    // too, not assumed from the browse contract.
+    // endpoint applies — a cake can still be fetched directly by id even
+    // when unavailable, so this has to be checked here too, not assumed.
     private CakeResponse fetchAvailableCake(Long cakeId) {
         CakeResponse cake;
         try {

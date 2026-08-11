@@ -1,7 +1,6 @@
 package com.cakedelight.notificationservice.service;
 
 import com.cakedelight.notificationservice.entity.NotificationChannel;
-import com.cakedelight.notificationservice.event.OrderCompletedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

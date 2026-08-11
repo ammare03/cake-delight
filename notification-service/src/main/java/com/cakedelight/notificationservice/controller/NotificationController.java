@@ -1,6 +1,6 @@
 package com.cakedelight.notificationservice.controller;
 
-import com.cakedelight.notificationservice.dto.response.NotificationResponse;
+import com.cakedelight.notificationservice.dto.NotificationResponse;
 import com.cakedelight.notificationservice.service.NotificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.cakedelight.notificationservice.exception;
 
-import com.cakedelight.notificationservice.dto.response.ErrorResponse;
+import com.cakedelight.notificationservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,11 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        log.warn("Business error {}: {}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), resolvePath(req)));
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthenticated(UnauthenticatedException ex, HttpServletRequest req) {
+        log.warn("Unauthenticated: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", ex.getMessage(), resolvePath(req)));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

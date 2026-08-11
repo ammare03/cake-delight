@@ -1,6 +1,5 @@
-package com.cakedelight.orderservice.client;
+package com.cakedelight.orderservice.service;
 
-import com.cakedelight.orderservice.client.dto.CakeResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

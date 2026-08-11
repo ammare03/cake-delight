@@ -1,4 +1,4 @@
-package com.cakedelight.notificationservice.event;
+package com.cakedelight.notificationservice.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;

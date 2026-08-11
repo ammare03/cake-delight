@@ -1,4 +1,4 @@
-package com.cakedelight.orderservice.dto.request;
+package com.cakedelight.orderservice.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

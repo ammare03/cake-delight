@@ -1,4 +1,4 @@
-package com.cakedelight.orderservice.event;
+package com.cakedelight.orderservice.service;
 
 import com.cakedelight.orderservice.entity.Order;
 import org.junit.jupiter.api.Test;

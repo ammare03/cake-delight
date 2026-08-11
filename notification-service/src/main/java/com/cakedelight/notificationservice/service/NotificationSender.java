@@ -1,7 +1,6 @@
 package com.cakedelight.notificationservice.service;
 
 import com.cakedelight.notificationservice.entity.NotificationChannel;
-import com.cakedelight.notificationservice.event.OrderCompletedEvent;
 
 /**
  * The seam a real channel drops into later. CLAUDE.md §5.2 originally

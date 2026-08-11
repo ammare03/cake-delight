@@ -1,6 +1,5 @@
-package com.cakedelight.notificationservice.event;
+package com.cakedelight.notificationservice.service;
 
-import com.cakedelight.notificationservice.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

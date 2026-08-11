@@ -1,4 +1,4 @@
-package com.cakedelight.notificationservice.dto.response;
+package com.cakedelight.orderservice.dto;
 
 import org.springframework.http.HttpStatus;
 

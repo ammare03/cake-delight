@@ -1,6 +1,6 @@
 package com.cakedelight.orderservice.controller;
 
-import com.cakedelight.orderservice.dto.response.PurchaseCheckResponse;
+import com.cakedelight.orderservice.dto.PurchaseCheckResponse;
 import com.cakedelight.orderservice.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
