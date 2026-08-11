@@ -1,4 +1,4 @@
-package com.cakedelight.authservice.dto.request;
+package com.cakedelight.authservice.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

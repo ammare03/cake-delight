@@ -1,6 +1,6 @@
 package com.cakedelight.authservice.exception;
 
-import com.cakedelight.authservice.dto.response.ErrorResponse;
+import com.cakedelight.authservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,17 +27,30 @@ class GlobalExceptionHandlerTest {
     GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void handleBusiness_returnsMappedStatusAndErrorBody() {
+    void handleEmailExists_returnsConflictAndErrorBody() {
         when(request.getRequestURI()).thenReturn("/auth/register");
         EmailAlreadyExistsException ex = new EmailAlreadyExistsException("taken@example.com");
 
-        ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex, request);
+        ResponseEntity<ErrorResponse> response = handler.handleEmailExists(ex, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().code()).isEqualTo("EMAIL_ALREADY_EXISTS");
         assertThat(response.getBody().status()).isEqualTo(409);
         assertThat(response.getBody().path()).isEqualTo("/auth/register");
+    }
+
+    @Test
+    void handleInvalidCredentials_returnsUnauthorizedAndErrorBody() {
+        when(request.getRequestURI()).thenReturn("/auth/login");
+        InvalidCredentialsException ex = new InvalidCredentialsException();
+
+        ResponseEntity<ErrorResponse> response = handler.handleInvalidCredentials(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().code()).isEqualTo("INVALID_CREDENTIALS");
+        assertThat(response.getBody().status()).isEqualTo(401);
     }
 
     @Test

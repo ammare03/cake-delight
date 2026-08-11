@@ -1,6 +1,6 @@
 package com.cakedelight.authservice.exception;
 
-import com.cakedelight.authservice.dto.response.ErrorResponse;
+import com.cakedelight.authservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,18 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        log.warn("Business error {}: {}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), resolvePath(req)));
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleEmailExists(EmailAlreadyExistsException ex, HttpServletRequest req) {
+        log.warn("Registration rejected: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest req) {
+        log.warn("Login rejected: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage(), resolvePath(req)));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

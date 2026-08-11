@@ -1,11 +1,9 @@
 package com.cakedelight.authservice.service;
 
-import com.cakedelight.authservice.config.JwtProperties;
 import com.cakedelight.authservice.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -14,32 +12,36 @@ import java.time.Instant;
 import java.util.Date;
 
 @Component
-@RequiredArgsConstructor
 public class JwtService {
 
-    private final JwtProperties jwtProperties;
+    @Value("${app.jwt.secret}")
+    private String secret;
 
-    // Built once at startup, not per token — the secret never changes at
-    // runtime, and Keys.hmacShaKeyFor() isn't free.
-    private SecretKey signingKey;
-
-    @PostConstruct
-    void init() {
-        signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-    }
+    @Value("${app.jwt.expiration-ms}")
+    private long expirationMs;
 
     public String generateToken(User user) {
         Instant now = Instant.now();
-        Instant expiry = now.plusMillis(jwtProperties.getExpirationMs());
+        Instant expiry = now.plusMillis(expirationMs);
 
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
-                .issuer(jwtProperties.getIssuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
-                .signWith(signingKey)
+                .signWith(signingKey())
                 .compact();
+    }
+
+    public long getExpirationMs() {
+        return expirationMs;
+    }
+
+    // Rebuilt from the config-loaded secret each call rather than cached at
+    // startup — one less lifecycle annotation to explain, and building an
+    // HMAC key from a short string is cheap at this scale.
+    private SecretKey signingKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 }

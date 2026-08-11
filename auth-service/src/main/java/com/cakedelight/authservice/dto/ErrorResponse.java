@@ -1,4 +1,4 @@
-package com.cakedelight.authservice.dto.response;
+package com.cakedelight.authservice.dto;
 
 import org.springframework.http.HttpStatus;
 
