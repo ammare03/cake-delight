@@ -2,16 +2,18 @@
 
 A cloud-native cake e-commerce app built as 8 Spring Boot microservices + a Next.js frontend. Capstone project — see `docs/audits/` for progress audits against the requirements.
 
-**Status:** Backend (Phases 1–4) and frontend (Phase 5) built and tested live end-to-end. All 8 services start cleanly, register with Eureka, and the full flow — register → log in → browse/filter cakes → add to basket → update quantity → checkout → Kafka → notification recorded → rate a purchased cake → average updates — works through `frontend-service` (`:3000`) → `api-gateway` (`:9090`) → the business services. See **Frontend (`frontend-service`)** below and the Phase 3 & 4 checklist for the API-level walkthrough.
+**Status:** Phases 1–5 complete and tested live end-to-end (see **Frontend (`frontend-service`)** below for the local/IDE walkthrough). Phase 6 containerization: the full stack (all 8 Spring services + `frontend-service`) now also builds and runs via Docker — one multi-stage `Dockerfile` per service plus a full `docker-compose.yml` — verified live end-to-end (register → browse → filter → basket → checkout → Kafka → notification → rating). See **Phase 6 — Docker & Kubernetes** below. Kubernetes deployment is next.
 
 ## Prerequisites
 
 - JDK 17
 - Maven 3.9+ (each service also ships its own `mvnw` wrapper)
 - A MySQL-compatible server reachable locally (see **Local database** below) — needed from `auth-service` onward
-- Docker Desktop (for the bundled MySQL via `docker-compose`, and — from Phase 4 — Kafka + Zookeeper, needed by `order-service` and `notification-service`)
+- Docker Desktop (for the bundled MySQL via `docker-compose`, and — from Phase 4 — Kafka + Zookeeper, needed by `order-service` and `notification-service`; from Phase 6, also for running the whole stack containerized — see **Phase 6 — Docker & Kubernetes** below)
 - Node.js 20+ (for `frontend-service`)
-- IntelliJ IDEA (or any IDE with Spring Boot support)
+- IntelliJ IDEA (or any IDE with Spring Boot support) — only needed for the host/IDE-based workflow described in this section; Phase 6's Docker Compose workflow needs only Docker Desktop
+
+**Note:** everything above **this line** describes running each service directly on the host (via IDE or `mvn spring-boot:run`) — Phases 1–5's original workflow, still fully supported. For running the whole stack containerized, skip to **Phase 6 — Docker & Kubernetes** near the end of this file — it needs only Docker Desktop, not a JDK/Maven/Node install on the host.
 
 ## Services and ports
 
@@ -175,6 +177,30 @@ Run through this once all eight services are up (`config-server`, `eureka-server
 17. Repeat step 16 for the same cake + same user — expect `409`.
 18. `GET /api/ratings/cakes/{cakeId}/summary` — expect `{averageRating: 5.0, totalRatings: 1}`.
 19. Eureka dashboard shows all six business services + gateway registered; every service's Swagger UI loads directly on its own port.
+
+## Phase 6 — Docker & Kubernetes
+
+Every service (the 8 Spring services + `frontend-service`) has its own multi-stage `Dockerfile` (build stage brings its own Maven/Node — no host build required) and `.dockerignore`. `docker-compose.yml` runs the whole stack containerized. Every service's config now reads `CONFIG_SERVER_HOST`, `EUREKA_URL`, `DB_HOST`/`DB_PORT`, and `KAFKA_BOOTSTRAP_SERVERS` from the environment — the same `${VAR:default}` pattern already used for `JWT_SECRET`/`SMTP_PASSWORD` — so the same code and config run unchanged whether a service is started on the host or inside a container; only the environment values differ.
+
+> **Windows + OneDrive note:** if this repo lives under a OneDrive-synced folder (as the author's dev machine does), Docker's default BuildKit builder fails with `ERROR: invalid file request <file>` — a known interaction between BuildKit's lazy file-transfer protocol and OneDrive's placeholder files. The legacy builder doesn't hit this. Every build command below sets `DOCKER_BUILDKIT=0` (and `COMPOSE_DOCKER_CLI_BUILD=0` for Compose) for that reason. If your clone isn't under OneDrive, these are harmless no-ops and can be dropped.
+
+### Secrets — running this independently of the author
+
+`JWT_SECRET` is the one secret Docker Compose needs, and it's self-contained: only `auth-service` (issues tokens) and `api-gateway` (verifies them) need to agree on the value; nothing external ever checks it, so any sufficiently random string works. Put it in `.env` (git-ignored; `.env.example` documents the variable). If `.env` is missing entirely, `config-repo/application.properties`'s own loud, obviously-insecure placeholder default still lets the stack boot and work — no setup step is required to see the app run.
+
+`SMTP_PASSWORD` (real Gmail credential, optional — see **Real email notifications** above) works the same way here as it does on the host: set it in `.env` for real email, or leave it unset and set `NOTIFICATION_CHANNEL=log` to fall back to `LoggingNotificationSender` — the full order → notification flow still works either way.
+
+### Docker Compose
+
+```sh
+cp .env.example .env
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose up -d
+```
+
+MySQL, Kafka, and Zookeeper come up first (existing Phase 4 healthchecks), then `config-server` and `eureka-server`, then the five business services, then `api-gateway`, then `frontend-service` — `depends_on`/`condition: service_healthy` in `docker-compose.yml` enforces this order automatically; no manual sequencing needed, unlike running services individually on the host. Once everything is `Up (healthy)` (`docker compose ps`), the app is reachable at the same URLs as local dev: gateway on `http://localhost:9090`, frontend on `http://localhost:3000`. `docker compose logs -f <service>` for any single service's logs; `docker compose down` to stop (add `-v` to also drop the MySQL volume).
+
+Each service's image is tagged `cake-delight/<service>:latest` (set via `image:` in `docker-compose.yml`) — this naming is deliberate and reused by the Kubernetes deployment documented in a follow-up commit.
 
 ## Tech stack
 

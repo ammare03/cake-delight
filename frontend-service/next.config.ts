@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, ".."),
   },
+  // Phase 6 — produces a self-contained .next/standalone build (a minimal
+  // server.js plus only the node_modules actually used) so the Docker
+  // runtime stage doesn't need to ship the full node_modules tree or run
+  // `next start` against the source. No effect on `npm run dev`.
+  output: "standalone",
 };
 
 export default nextConfig;

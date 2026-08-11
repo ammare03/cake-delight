@@ -48,8 +48,10 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       # Two listeners: one for other containers on the compose network
-      # (kafka:29092), one for host processes — every Cake Delight service
-      # runs on the host, not in a container, until Phase 6.
+      # (kafka:29092) — this is what every Cake Delight service now uses,
+      # since Phase 6 runs them as containers on this same network — and one
+      # for host processes (localhost:9092), kept for anyone still running a
+      # service outside Docker against this same broker.
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
@@ -63,6 +65,236 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+
+  # ---------------------------------------------------------------------
+  # Phase 6 — the 8 Spring services + frontend-service, containerized.
+  # Every Spring service reads CONFIG_SERVER_HOST/EUREKA_URL/DB_HOST/
+  # KAFKA_BOOTSTRAP_SERVERS from the environment (see the Phase 6 edits to
+  # each bootstrap application.properties and config-repo/*.properties) —
+  # here they're pointed at other services by their Compose service name,
+  # which Docker's embedded DNS resolves on the shared default network.
+  # ---------------------------------------------------------------------
+
+  config-server:
+    build: ./config-server
+    # Explicit image name/tag, shared with the Kubernetes manifests
+    # (k8s/services/*.yaml reference the same cake-delight/<service>:latest
+    # names) so `docker compose build` doubles as the k8s image build —
+    # see the root README's Kubernetes section for the one difference
+    # (frontend-service needs a different build arg per target).
+    image: cake-delight/config-server:latest
+    container_name: cake-delight-config-server
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      # Bind-mounted below, not baked into the image, so editing a file
+      # under config-repo/ and restarting this one container is still all
+      # that's needed to change config — same "edit the file, restart the
+      # service" loop as running config-server outside Docker.
+      CONFIG_REPO_PATH: /config-repo
+    volumes:
+      - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  eureka-server:
+    build: ./eureka-server
+    image: cake-delight/eureka-server:latest
+    container_name: cake-delight-eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  auth-service:
+    build: ./auth-service
+    image: cake-delight/auth-service:latest
+    container_name: cake-delight-auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      # See the root README's "Secrets" section — JWT_SECRET is the one
+      # secret that's safe for anyone to generate themselves.
+      #
+      # The fallback literal below is NOT a Compose-specific default — it's
+      # the exact same insecure-but-loud placeholder already in
+      # config-repo/application.properties's own
+      # ${JWT_SECRET:CHANGE_ME_INSECURE_...} property. It has to be spelled
+      # out here too because Spring's ${VAR:default} placeholder syntax
+      # only falls back when a variable is completely ABSENT — an env var
+      # that's present but set to "" (which is what plain ${JWT_SECRET:-}
+      # would produce whenever .env leaves JWT_SECRET empty) counts as
+      # "present" and short-circuits that fallback, handing JJWT a 0-byte
+      # signing key and crashing the service at startup.
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_INSECURE_LOCAL_DEV_DEFAULT_DO_NOT_USE_FOR_ANYTHING_REAL}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  catalog-service:
+    build: ./catalog-service
+    image: cake-delight/catalog-service:latest
+    container_name: cake-delight-catalog-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: "3306"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  order-service:
+    build: ./order-service
+    image: cake-delight/order-service:latest
+    container_name: cake-delight-order-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  rating-service:
+    build: ./rating-service
+    image: cake-delight/rating-service:latest
+    container_name: cake-delight-rating-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: "3306"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  notification-service:
+    build: ./notification-service
+    image: cake-delight/notification-service:latest
+    container_name: cake-delight-notification-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # See the root README's "Secrets" section. Left unset (and
+      # NOTIFICATION_CHANNEL left at its "log" default below), the stack
+      # still demonstrates the full order->notification flow with no setup
+      # step — it just records notifications instead of emailing them.
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      NOTIFICATION_CHANNEL: ${NOTIFICATION_CHANNEL:-log}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    image: cake-delight/api-gateway:latest
+    container_name: cake-delight-api-gateway
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      CONFIG_SERVER_HOST: config-server
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      # See auth-service's identical JWT_SECRET line above for why the
+      # fallback must be spelled out here rather than left as
+      # ${JWT_SECRET:-} — Spring's own config-repo/application.properties
+      # placeholder default only triggers on an ABSENT variable, not one
+      # present-but-empty.
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_INSECURE_LOCAL_DEV_DEFAULT_DO_NOT_USE_FOR_ANYTHING_REAL}
+      FRONTEND_ORIGIN: http://localhost:3000
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      # Not a hard runtime dependency (Eureka registration is retried), but
+      # starting the gateway last mirrors the documented startup order and
+      # avoids a confusing window of 503s right after `docker compose up`.
+      auth-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      rating-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+
+  frontend-service:
+    build:
+      context: ./frontend-service
+      args:
+        # Baked in at build time (Next.js constraint — see the Dockerfile's
+        # own comment). Matches api-gateway's host port mapping above, since
+        # the browser reaches the gateway from the host, not the Compose
+        # network.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:9090/api}
+    image: cake-delight/frontend-service:latest
+    container_name: cake-delight-frontend-service
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      api-gateway:
+        condition: service_started
 
 volumes:
   mysql-data:
