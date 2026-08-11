@@ -2,7 +2,7 @@
 
 A cloud-native cake e-commerce app built as 8 Spring Boot microservices + a Next.js frontend. Capstone project — see `docs/audits/` for progress audits against the requirements.
 
-**Status:** Phase 4 (`order-service`, `notification-service`, Kafka) built and unit/slice-tested; full live smoke test against running services is still pending (see the Phase 4 checklist below). Through Phase 3: `config-server`, `eureka-server`, `api-gateway`, `auth-service`, `catalog-service`, and `rating-service` all start cleanly and register with Eureka. Catalog browsing (`GET /api/catalog/cakes`, with filters, and `GET /api/catalog/cakes/{id}`) is public through the gateway; creating/updating/deleting a cake requires a token and the `ADMIN` role, enforced in `catalog-service` itself — confirmed live (403 for a customer token, 201/200/204 for an admin token). Every `/api/ratings/**` route requires a token, admin or not — submit, list, and summary all confirmed live, including the 401 (no token) and 409 (duplicate rating) cases. `order-service` now handles basket/checkout and `notification-service` consumes `order.completed` off Kafka; ratings additionally require the caller to have actually purchased the cake (`order-service` backs this via an internal Feign call). The frontend is not started yet.
+**Status:** Backend (Phases 1–4) and frontend (Phase 5) built and tested live end-to-end. All 8 services start cleanly, register with Eureka, and the full flow — register → log in → browse/filter cakes → add to basket → update quantity → checkout → Kafka → notification recorded → rate a purchased cake → average updates — works through `frontend-service` (`:3000`) → `api-gateway` (`:9090`) → the business services. See **Frontend (`frontend-service`)** below and the Phase 3 & 4 checklist for the API-level walkthrough.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ A cloud-native cake e-commerce app built as 8 Spring Boot microservices + a Next
 - Maven 3.9+ (each service also ships its own `mvnw` wrapper)
 - A MySQL-compatible server reachable locally (see **Local database** below) — needed from `auth-service` onward
 - Docker Desktop (for the bundled MySQL via `docker-compose`, and — from Phase 4 — Kafka + Zookeeper, needed by `order-service` and `notification-service`)
-- Node.js 20+ (for the frontend, from Phase 5 onward)
+- Node.js 20+ (for `frontend-service`)
 - IntelliJ IDEA (or any IDE with Spring Boot support)
 
 ## Services and ports
@@ -25,6 +25,7 @@ A cloud-native cake e-commerce app built as 8 Spring Boot microservices + a Next
 | `rating-service` | 8084 | Cake ratings — submit (purchase-verified), list by cake, average/count summary (all require auth) |
 | `notification-service` | 8085 | Consumes `order.completed`, records a notification per order (all require auth) |
 | `api-gateway` | **9090** | Single public entry point |
+| `frontend-service` | 3000 | Next.js app (`npm run dev`) — talks to `api-gateway`, not any service directly |
 
 > **Note:** `api-gateway` runs on `9090`, not the more conventional `8080`. This is a local port conflict (XAMPP occupies `8080` on the primary dev machine), not a design decision — if your environment doesn't have that conflict, the port is still `9090` per `config-repo/api-gateway.properties`; change it there if you'd rather use `8080`.
 
@@ -41,6 +42,7 @@ Services must start in this order — each one depends on the previous being up:
                                   and notification-service don't need to start in a particular order
                                   relative to each other)
 5. api-gateway                  (last, so it can resolve lb:// routes to already-registered services)
+6. frontend-service             (npm run dev — see Frontend below; optional, only needed to use the UI)
 ```
 
 Wait for each service to fully start (watch for `Started XxxApplication` in the console) before starting the next.
@@ -136,6 +138,17 @@ Config format is `.properties`, not YAML, project-wide.
 Values that multiple services need identically (Eureka URL, actuator exposure, the JWT signing secret) live in the **shared** `config-repo/application.properties`, not duplicated per service — see Authentication above for why that matters for the JWT secret specifically.
 
 **Secrets:** for local development, plaintext values (DB passwords, JWT secret) live directly in `config-repo/*.properties` — acceptable at this scope but never committed for anything beyond local dev. From Phase 6 onward, these move to environment variables locally and Kubernetes `Secret` resources in-cluster.
+
+## Frontend (`frontend-service`)
+
+Next.js 16 (App Router, TypeScript), Tailwind CSS v4, shadcn/ui. Talks to the backend exclusively through `api-gateway` on `:9090` — never a business service directly, same trust-boundary rule as everything else in CLAUDE.md §4.
+
+- **Run it:** `cd frontend-service && npm install && npm run dev` — serves on `http://localhost:3000`. Needs the full backend stack up first (see **Startup order** above); the catalog list/detail pages work without login, everything else (basket, checkout, orders, ratings, notifications) needs a registered/logged-in user.
+- **Config:** `NEXT_PUBLIC_API_BASE_URL` (see `.env.local.example`) — defaults to `http://localhost:9090/api` if unset.
+- **Session:** the JWT + `{email, role}` from login/register live in `localStorage` (`lib/auth-storage.ts`), attached as `Authorization: Bearer <token>` on every request by `lib/api-client.ts`. A `401` on an authenticated request clears the session and redirects to `/login`.
+- **CORS:** `api-gateway` didn't have any CORS configuration before Phase 5 — none of the 8 services did, since nothing had called the gateway from a browser yet. `CorsConfig` (`api-gateway/src/main/java/.../config/CorsConfig.java`) now allows `app.frontend.origin` (`config-repo/api-gateway.properties`, defaults to `http://localhost:3000`). `JwtAuthenticationFilter` also had to let `OPTIONS` (CORS preflight) through unconditionally, ahead of the token check — browsers never attach `Authorization` to a preflight, so the filter was 401-ing every preflight for a protected route and silently blocking the real request behind it. Caught live in the first browser smoke test; see the filter's own comment for the full explanation.
+- **No admin UI.** CLAUDE.md §12 rules out an admin dashboard as scope creep — cake CRUD stays backend-only (`data.sql` seeding + direct API calls), the frontend only consumes the customer-facing endpoints (catalog browse, basket, checkout, orders, ratings, notifications).
+- **Ratings require login for the GETs too** — unlike catalog, `api-gateway`'s `app.security.public-get-paths` has no entry for `/api/ratings/**`, so the cake detail page only fetches/shows ratings once a user is signed in.
 
 ## Phase 3 & 4 manual smoke test
 
