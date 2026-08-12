@@ -1,12 +1,9 @@
 package com.cakedelight.notificationservice.service;
 
-import com.cakedelight.notificationservice.dto.response.NotificationResponse;
+import com.cakedelight.notificationservice.dto.NotificationResponse;
 import com.cakedelight.notificationservice.entity.Notification;
-import com.cakedelight.notificationservice.entity.NotificationChannel;
 import com.cakedelight.notificationservice.entity.NotificationStatus;
-import com.cakedelight.notificationservice.event.OrderCompletedEvent;
 import com.cakedelight.notificationservice.exception.UnauthenticatedException;
-import com.cakedelight.notificationservice.mapper.NotificationMapper;
 import com.cakedelight.notificationservice.repository.NotificationRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +20,6 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final NotificationMapper notificationMapper;
     private final NotificationSender notificationSender;
     private final ObjectMapper objectMapper;
 
@@ -67,7 +63,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponse> listNotifications(String rawUserId) {
         Long userId = parseUserId(rawUserId);
-        return notificationRepository.findByUserId(userId).stream().map(notificationMapper::toResponse).toList();
+        return notificationRepository.findByUserId(userId).stream().map(NotificationResponse::from).toList();
     }
 
     private String toPayload(OrderCompletedEvent event) {

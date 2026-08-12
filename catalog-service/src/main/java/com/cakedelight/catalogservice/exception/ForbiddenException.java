@@ -1,7 +1,5 @@
 package com.cakedelight.catalogservice.exception;
 
-import org.springframework.http.HttpStatus;
-
 /**
  * Thrown when an authenticated caller's role (from the gateway-injected
  * X-User-Role header) isn't allowed to perform the action — e.g. a
@@ -9,8 +7,8 @@ import org.springframework.http.HttpStatus;
  * only proves *who* the caller is; this service enforces *what they're
  * allowed to do* (CLAUDE.md §4).
  */
-public class ForbiddenException extends BusinessException {
+public class ForbiddenException extends RuntimeException {
     public ForbiddenException(String message) {
-        super("FORBIDDEN", HttpStatus.FORBIDDEN, message);
+        super(message);
     }
 }

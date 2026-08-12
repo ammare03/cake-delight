@@ -1,6 +1,6 @@
 package com.cakedelight.orderservice.controller;
 
-import com.cakedelight.orderservice.dto.response.OrderResponse;
+import com.cakedelight.orderservice.dto.OrderResponse;
 import com.cakedelight.orderservice.exception.EmptyBasketException;
 import com.cakedelight.orderservice.exception.GlobalExceptionHandler;
 import com.cakedelight.orderservice.exception.OrderNotFoundException;

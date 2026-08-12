@@ -1,16 +1,13 @@
 package com.cakedelight.ratingservice.service;
 
-import com.cakedelight.ratingservice.client.OrderClient;
-import com.cakedelight.ratingservice.client.dto.PurchaseCheckResponse;
-import com.cakedelight.ratingservice.dto.request.CreateRatingRequest;
-import com.cakedelight.ratingservice.dto.response.RatingResponse;
-import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
+import com.cakedelight.ratingservice.dto.CreateRatingRequest;
+import com.cakedelight.ratingservice.dto.RatingResponse;
+import com.cakedelight.ratingservice.dto.RatingSummaryResponse;
 import com.cakedelight.ratingservice.entity.Rating;
 import com.cakedelight.ratingservice.exception.DuplicateRatingException;
 import com.cakedelight.ratingservice.exception.NotPurchasedException;
 import com.cakedelight.ratingservice.exception.OrderServiceUnavailableException;
 import com.cakedelight.ratingservice.exception.UnauthenticatedException;
-import com.cakedelight.ratingservice.mapper.RatingMapper;
 import com.cakedelight.ratingservice.repository.RatingRepository;
 import feign.FeignException;
 import org.junit.jupiter.api.Test;
@@ -19,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +31,6 @@ class RatingServiceTest {
 
     @Mock
     RatingRepository ratingRepository;
-
-    @Mock
-    RatingMapper ratingMapper;
 
     @Mock
     OrderClient orderClient;
@@ -105,30 +98,28 @@ class RatingServiceTest {
         CreateRatingRequest request = new CreateRatingRequest(1L, 5, "Great cake");
         when(orderClient.checkPurchase(42L, 1L)).thenReturn(new PurchaseCheckResponse(true));
         when(ratingRepository.existsByCakeIdAndUserId(1L, 42L)).thenReturn(false);
-        Rating toSave = new Rating();
-        Rating saved = new Rating();
-        saved.setId(1L);
-        saved.setCakeId(1L);
-        saved.setUserId(42L);
-        saved.setRatingValue(5);
-        when(ratingMapper.toEntity(request, 42L)).thenReturn(toSave);
-        when(ratingRepository.save(toSave)).thenReturn(saved);
-        when(ratingMapper.toResponse(saved)).thenReturn(
-                new RatingResponse(1L, 1L, 42L, 5, "Great cake", Instant.now()));
+        when(ratingRepository.save(any(Rating.class))).thenAnswer(inv -> {
+            Rating r = inv.getArgument(0);
+            r.setId(1L);
+            return r;
+        });
 
         RatingResponse result = ratingService.submitRating(request, "42");
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.userId()).isEqualTo(42L);
+        assertThat(result.cakeId()).isEqualTo(1L);
+        assertThat(result.ratingValue()).isEqualTo(5);
     }
 
     @Test
     void listRatingsForCake_returnsMappedResponses() {
         Rating rating = new Rating();
         rating.setId(1L);
+        rating.setCakeId(1L);
+        rating.setUserId(42L);
+        rating.setRatingValue(5);
         when(ratingRepository.findByCakeId(1L)).thenReturn(List.of(rating));
-        when(ratingMapper.toResponse(rating)).thenReturn(
-                new RatingResponse(1L, 1L, 42L, 5, "Great cake", Instant.now()));
 
         List<RatingResponse> result = ratingService.listRatingsForCake(1L);
 

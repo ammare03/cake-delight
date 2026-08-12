@@ -1,6 +1,6 @@
 package com.cakedelight.orderservice.controller;
 
-import com.cakedelight.orderservice.dto.response.BasketResponse;
+import com.cakedelight.orderservice.dto.BasketResponse;
 import com.cakedelight.orderservice.exception.BasketItemNotFoundException;
 import com.cakedelight.orderservice.exception.CakeNotFoundException;
 import com.cakedelight.orderservice.exception.CakeUnavailableException;

@@ -1,16 +1,13 @@
 package com.cakedelight.ratingservice.service;
 
-import com.cakedelight.ratingservice.client.OrderClient;
-import com.cakedelight.ratingservice.client.dto.PurchaseCheckResponse;
-import com.cakedelight.ratingservice.dto.request.CreateRatingRequest;
-import com.cakedelight.ratingservice.dto.response.RatingResponse;
-import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
+import com.cakedelight.ratingservice.dto.CreateRatingRequest;
+import com.cakedelight.ratingservice.dto.RatingResponse;
+import com.cakedelight.ratingservice.dto.RatingSummaryResponse;
 import com.cakedelight.ratingservice.entity.Rating;
 import com.cakedelight.ratingservice.exception.DuplicateRatingException;
 import com.cakedelight.ratingservice.exception.NotPurchasedException;
 import com.cakedelight.ratingservice.exception.OrderServiceUnavailableException;
 import com.cakedelight.ratingservice.exception.UnauthenticatedException;
-import com.cakedelight.ratingservice.mapper.RatingMapper;
 import com.cakedelight.ratingservice.repository.RatingRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +23,6 @@ import java.util.List;
 public class RatingService {
 
     private final RatingRepository ratingRepository;
-    private final RatingMapper ratingMapper;
     private final OrderClient orderClient;
 
     @Transactional
@@ -34,23 +30,26 @@ public class RatingService {
         Long userId = parseUserId(rawUserId);
 
         // CLAUDE.md §5.2 — only users who purchased the cake can rate it.
-        // Deferred through Phase 3 (order-service didn't exist yet); now
-        // wired to the real check via Feign, per the dated TODO this
-        // replaces.
         requirePurchased(userId, request.cakeId());
 
         if (ratingRepository.existsByCakeIdAndUserId(request.cakeId(), userId)) {
             throw new DuplicateRatingException(request.cakeId(), userId);
         }
 
-        Rating saved = ratingRepository.save(ratingMapper.toEntity(request, userId));
+        Rating rating = new Rating();
+        rating.setCakeId(request.cakeId());
+        rating.setUserId(userId);
+        rating.setRatingValue(request.ratingValue());
+        rating.setReviewText(request.reviewText());
+
+        Rating saved = ratingRepository.save(rating);
         log.info("User {} rated cake {} with {}", userId, saved.getCakeId(), saved.getRatingValue());
-        return ratingMapper.toResponse(saved);
+        return RatingResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
     public List<RatingResponse> listRatingsForCake(Long cakeId) {
-        return ratingRepository.findByCakeId(cakeId).stream().map(ratingMapper::toResponse).toList();
+        return ratingRepository.findByCakeId(cakeId).stream().map(RatingResponse::from).toList();
     }
 
     @Transactional(readOnly = true)

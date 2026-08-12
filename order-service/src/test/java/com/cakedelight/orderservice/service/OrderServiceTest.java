@@ -1,15 +1,13 @@
 package com.cakedelight.orderservice.service;
 
-import com.cakedelight.orderservice.dto.response.OrderResponse;
+import com.cakedelight.orderservice.dto.OrderResponse;
 import com.cakedelight.orderservice.entity.Basket;
 import com.cakedelight.orderservice.entity.BasketItem;
 import com.cakedelight.orderservice.entity.Order;
 import com.cakedelight.orderservice.entity.OrderStatus;
-import com.cakedelight.orderservice.event.OrderCheckedOutEvent;
 import com.cakedelight.orderservice.exception.EmptyBasketException;
 import com.cakedelight.orderservice.exception.OrderNotFoundException;
 import com.cakedelight.orderservice.exception.UnauthenticatedException;
-import com.cakedelight.orderservice.mapper.OrderMapper;
 import com.cakedelight.orderservice.repository.BasketRepository;
 import com.cakedelight.orderservice.repository.OrderRepository;
 import org.junit.jupiter.api.Test;
@@ -21,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,9 +38,6 @@ class OrderServiceTest {
 
     @Mock
     BasketRepository basketRepository;
-
-    @Mock
-    OrderMapper orderMapper;
 
     @Mock
     ApplicationEventPublisher applicationEventPublisher;
@@ -96,12 +90,13 @@ class OrderServiceTest {
             order.setId(100L);
             return order;
         });
-        when(orderMapper.toResponse(any(Order.class))).thenReturn(
-                new OrderResponse(100L, 42L, new BigDecimal("1300.00"), "COMPLETED", List.of(), Instant.now()));
 
         OrderResponse result = orderService.checkout("42", "user@example.com");
 
         assertThat(result.id()).isEqualTo(100L);
+        assertThat(result.totalAmount()).isEqualByComparingTo("1300.00");
+        assertThat(result.status()).isEqualTo("COMPLETED");
+        assertThat(result.items()).hasSize(2);
 
         // Saved twice — once as CREATED, once transitioned to COMPLETED
         // (the real status transition SD-O3 asks for, fixed alongside B1).
@@ -145,9 +140,10 @@ class OrderServiceTest {
     void listOrders_returnsMappedResponses() {
         Order order = new Order();
         order.setId(1L);
+        order.setUserId(42L);
+        order.setTotalAmount(BigDecimal.TEN);
+        order.setStatus(OrderStatus.COMPLETED);
         when(orderRepository.findByUserId(42L)).thenReturn(List.of(order));
-        when(orderMapper.toResponse(order)).thenReturn(
-                new OrderResponse(1L, 42L, BigDecimal.TEN, "COMPLETED", List.of(), Instant.now()));
 
         List<OrderResponse> result = orderService.listOrders("42");
 
@@ -167,9 +163,10 @@ class OrderServiceTest {
     void getOrder_whenFound_returnsResponse() {
         Order order = new Order();
         order.setId(1L);
+        order.setUserId(42L);
+        order.setTotalAmount(BigDecimal.TEN);
+        order.setStatus(OrderStatus.COMPLETED);
         when(orderRepository.findByIdAndUserId(1L, 42L)).thenReturn(Optional.of(order));
-        when(orderMapper.toResponse(order)).thenReturn(
-                new OrderResponse(1L, 42L, BigDecimal.TEN, "COMPLETED", List.of(), Instant.now()));
 
         OrderResponse result = orderService.getOrder("42", 1L);
 

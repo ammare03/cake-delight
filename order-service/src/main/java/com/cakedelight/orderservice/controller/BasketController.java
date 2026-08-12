@@ -1,8 +1,8 @@
 package com.cakedelight.orderservice.controller;
 
-import com.cakedelight.orderservice.dto.request.AddBasketItemRequest;
-import com.cakedelight.orderservice.dto.request.UpdateBasketItemRequest;
-import com.cakedelight.orderservice.dto.response.BasketResponse;
+import com.cakedelight.orderservice.dto.AddBasketItemRequest;
+import com.cakedelight.orderservice.dto.BasketResponse;
+import com.cakedelight.orderservice.dto.UpdateBasketItemRequest;
 import com.cakedelight.orderservice.service.BasketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -1,8 +1,8 @@
 package com.cakedelight.ratingservice.controller;
 
-import com.cakedelight.ratingservice.dto.request.CreateRatingRequest;
-import com.cakedelight.ratingservice.dto.response.RatingResponse;
-import com.cakedelight.ratingservice.dto.response.RatingSummaryResponse;
+import com.cakedelight.ratingservice.dto.CreateRatingRequest;
+import com.cakedelight.ratingservice.dto.RatingResponse;
+import com.cakedelight.ratingservice.dto.RatingSummaryResponse;
 import com.cakedelight.ratingservice.service.RatingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -1,6 +1,6 @@
 package com.cakedelight.catalogservice.exception;
 
-import com.cakedelight.catalogservice.dto.response.ErrorResponse;
+import com.cakedelight.catalogservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,18 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        log.warn("Business error {}: {}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), resolvePath(req)));
+    @ExceptionHandler(CakeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(CakeNotFoundException ex, HttpServletRequest req) {
+        log.warn("Cake not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND, "CAKE_NOT_FOUND", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, HttpServletRequest req) {
+        log.warn("Forbidden: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), resolvePath(req)));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

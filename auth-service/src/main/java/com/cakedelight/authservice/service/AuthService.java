@@ -1,9 +1,8 @@
 package com.cakedelight.authservice.service;
 
-import com.cakedelight.authservice.config.JwtProperties;
-import com.cakedelight.authservice.dto.request.LoginRequest;
-import com.cakedelight.authservice.dto.request.RegisterRequest;
-import com.cakedelight.authservice.dto.response.AuthResponse;
+import com.cakedelight.authservice.dto.AuthResponse;
+import com.cakedelight.authservice.dto.LoginRequest;
+import com.cakedelight.authservice.dto.RegisterRequest;
 import com.cakedelight.authservice.entity.Role;
 import com.cakedelight.authservice.entity.User;
 import com.cakedelight.authservice.exception.EmailAlreadyExistsException;
@@ -11,6 +10,7 @@ import com.cakedelight.authservice.exception.InvalidCredentialsException;
 import com.cakedelight.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final JwtProperties jwtProperties;
+
+    // No SecurityConfig/@Bean for this — the gateway is the trust boundary
+    // (CLAUDE.md §4), this service has no endpoints to lock down, and BCrypt
+    // needs no configuration beyond the default work factor.
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -58,6 +61,6 @@ public class AuthService {
 
     private AuthResponse buildAuthResponse(User user) {
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, "Bearer", jwtProperties.getExpirationMs(), user.getEmail(), user.getRole().name());
+        return new AuthResponse(token, "Bearer", jwtService.getExpirationMs(), user.getEmail(), user.getRole().name());
     }
 }

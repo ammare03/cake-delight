@@ -1,17 +1,14 @@
 package com.cakedelight.catalogservice.service;
 
-import com.cakedelight.catalogservice.dto.request.CreateCakeRequest;
-import com.cakedelight.catalogservice.dto.request.UpdateCakeRequest;
-import com.cakedelight.catalogservice.dto.response.CakeResponse;
+import com.cakedelight.catalogservice.dto.CakeResponse;
+import com.cakedelight.catalogservice.dto.CreateCakeRequest;
+import com.cakedelight.catalogservice.dto.UpdateCakeRequest;
 import com.cakedelight.catalogservice.entity.Cake;
 import com.cakedelight.catalogservice.exception.CakeNotFoundException;
 import com.cakedelight.catalogservice.exception.ForbiddenException;
-import com.cakedelight.catalogservice.mapper.CakeMapper;
 import com.cakedelight.catalogservice.repository.CakeRepository;
-import com.cakedelight.catalogservice.repository.CakeSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,44 +26,50 @@ public class CakeService {
     private static final String ADMIN_ROLE = "ADMIN";
 
     private final CakeRepository cakeRepository;
-    private final CakeMapper cakeMapper;
 
     @Transactional(readOnly = true)
     public List<CakeResponse> search(String name, String category, BigDecimal minPrice, BigDecimal maxPrice) {
-        // isAvailable() is unconditional, not one of the optional name/category/
-        // price filters — browse never shows unavailable cakes (SD-C1). Admins
-        // still reach an unavailable cake directly via getCakeById/update/delete,
-        // which don't go through this specification.
-        Specification<Cake> spec = Specification.allOf(
-                CakeSpecifications.isAvailable(),
-                CakeSpecifications.hasName(name),
-                CakeSpecifications.hasCategory(category),
-                CakeSpecifications.minPrice(minPrice),
-                CakeSpecifications.maxPrice(maxPrice)
-        );
-        return cakeRepository.findAll(spec).stream().map(cakeMapper::toResponse).toList();
+        return cakeRepository.search(name, category, minPrice, maxPrice).stream()
+                .map(CakeResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public CakeResponse getCakeById(Long id) {
-        return cakeMapper.toResponse(findOrThrow(id));
+        return CakeResponse.from(findOrThrow(id));
     }
 
     @Transactional
     public CakeResponse createCake(CreateCakeRequest request, String callerRole) {
         requireAdmin(callerRole);
-        Cake saved = cakeRepository.save(cakeMapper.toEntity(request));
+
+        Cake cake = new Cake();
+        cake.setName(request.name());
+        cake.setDescription(request.description());
+        cake.setCategory(request.category());
+        cake.setPrice(request.price());
+        cake.setAvailable(request.available() != null ? request.available() : true);
+        cake.setImageUrl(request.imageUrl());
+
+        Cake saved = cakeRepository.save(cake);
         log.info("Created cake {} ({})", saved.getId(), saved.getName());
-        return cakeMapper.toResponse(saved);
+        return CakeResponse.from(saved);
     }
 
     @Transactional
     public CakeResponse updateCake(Long id, UpdateCakeRequest request, String callerRole) {
         requireAdmin(callerRole);
         Cake cake = findOrThrow(id);
-        cakeMapper.updateEntity(cake, request);
+
+        cake.setName(request.name());
+        cake.setDescription(request.description());
+        cake.setCategory(request.category());
+        cake.setPrice(request.price());
+        cake.setAvailable(request.available());
+        cake.setImageUrl(request.imageUrl());
+
         log.info("Updated cake {}", id);
-        return cakeMapper.toResponse(cake);
+        return CakeResponse.from(cake);
     }
 
     @Transactional

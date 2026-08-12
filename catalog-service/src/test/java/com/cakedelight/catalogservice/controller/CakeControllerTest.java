@@ -1,6 +1,6 @@
 package com.cakedelight.catalogservice.controller;
 
-import com.cakedelight.catalogservice.dto.response.CakeResponse;
+import com.cakedelight.catalogservice.dto.CakeResponse;
 import com.cakedelight.catalogservice.exception.CakeNotFoundException;
 import com.cakedelight.catalogservice.exception.ForbiddenException;
 import com.cakedelight.catalogservice.exception.GlobalExceptionHandler;

@@ -1,6 +1,6 @@
 package com.cakedelight.ratingservice.exception;
 
-import com.cakedelight.ratingservice.dto.response.ErrorResponse;
+import com.cakedelight.ratingservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,32 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        log.warn("Business error {}: {}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), resolvePath(req)));
+    @ExceptionHandler(DuplicateRatingException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateRatingException ex, HttpServletRequest req) {
+        log.warn("Duplicate rating: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT, "DUPLICATE_RATING", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(NotPurchasedException.class)
+    public ResponseEntity<ErrorResponse> handleNotPurchased(NotPurchasedException ex, HttpServletRequest req) {
+        log.warn("Not purchased: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN, "CAKE_NOT_PURCHASED", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(OrderServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleOrderServiceUnavailable(OrderServiceUnavailableException ex, HttpServletRequest req) {
+        log.error("order-service unavailable: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of(HttpStatus.SERVICE_UNAVAILABLE, "ORDER_SERVICE_UNAVAILABLE", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthenticated(UnauthenticatedException ex, HttpServletRequest req) {
+        log.warn("Unauthenticated: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", ex.getMessage(), resolvePath(req)));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

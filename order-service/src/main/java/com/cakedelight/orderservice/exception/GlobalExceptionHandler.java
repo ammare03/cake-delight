@@ -1,6 +1,6 @@
 package com.cakedelight.orderservice.exception;
 
-import com.cakedelight.orderservice.dto.response.ErrorResponse;
+import com.cakedelight.orderservice.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,11 +15,53 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        log.warn("Business error {}: {}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getStatus())
-                .body(ErrorResponse.of(ex.getStatus(), ex.getCode(), ex.getMessage(), resolvePath(req)));
+    @ExceptionHandler(BasketItemNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleBasketItemNotFound(BasketItemNotFoundException ex, HttpServletRequest req) {
+        log.warn("Basket item not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND, "BASKET_ITEM_NOT_FOUND", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(CakeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCakeNotFound(CakeNotFoundException ex, HttpServletRequest req) {
+        log.warn("Cake not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND, "CAKE_NOT_FOUND", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(CakeUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleCakeUnavailable(CakeUnavailableException ex, HttpServletRequest req) {
+        log.warn("Cake unavailable: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(HttpStatus.CONFLICT, "CAKE_UNAVAILABLE", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(CatalogUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleCatalogUnavailable(CatalogUnavailableException ex, HttpServletRequest req) {
+        log.error("catalog-service unavailable: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of(HttpStatus.SERVICE_UNAVAILABLE, "CATALOG_UNAVAILABLE", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(EmptyBasketException.class)
+    public ResponseEntity<ErrorResponse> handleEmptyBasket(EmptyBasketException ex, HttpServletRequest req) {
+        log.warn("Empty basket: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST, "BASKET_EMPTY", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex, HttpServletRequest req) {
+        log.warn("Order not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", ex.getMessage(), resolvePath(req)));
+    }
+
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthenticated(UnauthenticatedException ex, HttpServletRequest req) {
+        log.warn("Unauthenticated: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", ex.getMessage(), resolvePath(req)));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

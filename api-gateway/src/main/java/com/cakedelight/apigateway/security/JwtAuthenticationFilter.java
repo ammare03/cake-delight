@@ -1,20 +1,18 @@
 package com.cakedelight.apigateway.security;
 
-import com.cakedelight.apigateway.config.JwtProperties;
-import com.cakedelight.apigateway.config.SecurityProperties;
 import com.cakedelight.apigateway.dto.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,7 +23,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * The gateway's trust boundary (CLAUDE.md §4). Runs as a plain servlet
@@ -41,26 +38,30 @@ import java.util.List;
  * mutating verbs on the same path still need a token). Everything else
  * needs a valid Bearer token; on success, X-User-Id / X-User-Role are
  * injected so downstream services can trust them without re-validating the
- * JWT. See {@link SecurityProperties} for the matching rules.
+ * JWT.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtProperties jwtProperties;
-    private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    // Built once at startup, not per request — this filter runs on every
-    // request through the gateway, so rebuilding the key from the config
-    // string each time would be wasted work on the busiest path in the system.
-    private SecretKey signingKey;
+    @Value("${app.jwt.secret}")
+    private String secret;
 
-    @PostConstruct
-    void init() {
-        signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+    @Value("${app.security.public-paths:}")
+    private String[] publicPaths;
+
+    @Value("${app.security.public-get-paths:}")
+    private String[] publicGetPaths;
+
+    // The key is rebuilt from the config-loaded secret on each use rather than
+    // cached at startup — one less lifecycle method to explain, and building an
+    // HMAC key from a short string is cheap even on the gateway's hottest path.
+    private SecretKey signingKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -104,7 +105,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             Claims claims = Jwts.parser()
-                    .verifyWith(signingKey)
+                    .verifyWith(signingKey())
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
@@ -127,15 +128,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/actuator/")) {
             return true;
         }
-        if (matchesAny(securityProperties.getPublicPaths(), path)) {
+        if (matchesAny(publicPaths, path)) {
             return true;
         }
-        return "GET".equalsIgnoreCase(method) && matchesAny(securityProperties.getPublicGetPaths(), path);
+        return "GET".equalsIgnoreCase(method) && matchesAny(publicGetPaths, path);
     }
 
-    private boolean matchesAny(List<String> patterns, String path) {
+    private boolean matchesAny(String[] patterns, String path) {
         for (String pattern : patterns) {
-            if (pathMatcher.match(pattern, path)) {
+            if (!pattern.isBlank() && pathMatcher.match(pattern, path)) {
                 return true;
             }
         }

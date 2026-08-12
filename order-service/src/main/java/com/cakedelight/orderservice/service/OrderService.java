@@ -1,16 +1,14 @@
 package com.cakedelight.orderservice.service;
 
-import com.cakedelight.orderservice.dto.response.OrderResponse;
+import com.cakedelight.orderservice.dto.OrderResponse;
 import com.cakedelight.orderservice.entity.Basket;
 import com.cakedelight.orderservice.entity.BasketItem;
 import com.cakedelight.orderservice.entity.Order;
 import com.cakedelight.orderservice.entity.OrderItem;
 import com.cakedelight.orderservice.entity.OrderStatus;
-import com.cakedelight.orderservice.event.OrderCheckedOutEvent;
 import com.cakedelight.orderservice.exception.EmptyBasketException;
 import com.cakedelight.orderservice.exception.OrderNotFoundException;
 import com.cakedelight.orderservice.exception.UnauthenticatedException;
-import com.cakedelight.orderservice.mapper.OrderMapper;
 import com.cakedelight.orderservice.repository.BasketRepository;
 import com.cakedelight.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +27,6 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final BasketRepository basketRepository;
-    private final OrderMapper orderMapper;
     // Publishes an *internal* Spring event, not the Kafka one directly —
     // OrderCheckoutEventListener picks it up with @TransactionalEventListener
     // (phase = AFTER_COMMIT) so the Kafka send can never happen for a
@@ -79,13 +76,13 @@ public class OrderService {
         applicationEventPublisher.publishEvent(new OrderCheckedOutEvent(saved, userEmail));
 
         log.info("Checked out order {} for user {} (total {})", saved.getId(), userId, total);
-        return orderMapper.toResponse(saved);
+        return OrderResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
     public List<OrderResponse> listOrders(String rawUserId) {
         Long userId = parseUserId(rawUserId);
-        return orderRepository.findByUserId(userId).stream().map(orderMapper::toResponse).toList();
+        return orderRepository.findByUserId(userId).stream().map(OrderResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +90,7 @@ public class OrderService {
         Long userId = parseUserId(rawUserId);
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
-        return orderMapper.toResponse(order);
+        return OrderResponse.from(order);
     }
 
     @Transactional(readOnly = true)

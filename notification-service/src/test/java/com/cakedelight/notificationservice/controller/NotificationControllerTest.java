@@ -1,6 +1,6 @@
 package com.cakedelight.notificationservice.controller;
 
-import com.cakedelight.notificationservice.dto.response.NotificationResponse;
+import com.cakedelight.notificationservice.dto.NotificationResponse;
 import com.cakedelight.notificationservice.exception.GlobalExceptionHandler;
 import com.cakedelight.notificationservice.exception.UnauthenticatedException;
 import com.cakedelight.notificationservice.service.NotificationService;

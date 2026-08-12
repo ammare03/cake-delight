@@ -1,8 +1,8 @@
 package com.cakedelight.authservice.controller;
 
-import com.cakedelight.authservice.dto.request.LoginRequest;
-import com.cakedelight.authservice.dto.request.RegisterRequest;
-import com.cakedelight.authservice.dto.response.AuthResponse;
+import com.cakedelight.authservice.dto.AuthResponse;
+import com.cakedelight.authservice.dto.LoginRequest;
+import com.cakedelight.authservice.dto.RegisterRequest;
 import com.cakedelight.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
