@@ -4,9 +4,6 @@ target/
 *.war
 *.log
 *.stackdump
-.mvn/
-mvnw
-mvnw.cmd
 !**/src/main/**/target/
 !**/src/test/**/target/
 HELP.md
