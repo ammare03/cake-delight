@@ -70,13 +70,11 @@ config-repo/*-local.properties
 CLAUDE.md
 .claude/
 
-# Audit reports — local only, not committed. Narrower than docs/ itself:
-# graded deliverables (DL-2/DL-5/DL-6/DL-8 docs) belong in docs/ and must
-# be committed; only docs/audits/ is progress-tracking noise.
-docs/
-
-# Local-only project reference docs — kept on disk for local use, not
-# committed to the repo.
+# Local-only project docs — kept on disk for local use, not committed to
+# the repo. docs/ covers the whole folder (audits, service walkthroughs,
+# schema/event/demo/run-guide docs included) — previously only docs/audits/
+# and docs/services/ were narrower exceptions; the whole folder is local-only
+# now.
 DECISIONS.md
 FLOW.md
-docs/services/
+docs/
