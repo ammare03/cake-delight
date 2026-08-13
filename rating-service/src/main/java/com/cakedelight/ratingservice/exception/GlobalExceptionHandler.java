@@ -60,11 +60,6 @@ public class GlobalExceptionHandler {
                         "Something went wrong", resolvePath(req)));
     }
 
-    // See auth-service's GlobalExceptionHandler for the full rationale — the
-    // gateway forwards with /api stripped, so req.getRequestURI() here is
-    // already the internal post-StripPrefix path. X-Original-Path carries
-    // what the client actually called; fall back to the local path when
-    // absent (this service hit directly, bypassing the gateway).
     private String resolvePath(HttpServletRequest req) {
         String original = req.getHeader("X-Original-Path");
         return original != null ? original : req.getRequestURI();

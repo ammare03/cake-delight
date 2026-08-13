@@ -1,8 +1,6 @@
 import { apiFetch } from "@/lib/api-client";
 import { AddBasketItemRequest, Basket, Order, UpdateBasketItemRequest } from "@/lib/types";
 
-// Every route here requires auth at the gateway (CLAUDE.md §4) — all calls
-// carry whatever token auth-storage currently holds.
 export const basketApi = {
   get: () => apiFetch<Basket>("/orders/basket"),
 

@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.cakedelight</groupId>
     <artifactId>rating-service</artifactId>
@@ -55,8 +55,6 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
-        <!-- Phase 4: purchase-verification calls order-service (CLAUDE.md
-             §5.2's deferred TODO, now that order-service exists). -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
@@ -73,8 +71,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Swagger UI (CLAUDE.md Phase 3 task) — not in the Initializr
-             catalog, added manually. Same version as catalog-service. -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

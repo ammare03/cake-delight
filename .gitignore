@@ -1,4 +1,3 @@
-# Java / Maven
 target/
 *.class
 *.jar
@@ -10,12 +9,10 @@ mvnw
 mvnw.cmd
 !**/src/main/**/target/
 !**/src/test/**/target/
-# Spring Initializr per-module boilerplate — monorepo uses this root .gitignore instead
 HELP.md
 .gitattributes
 !/.gitattributes
 
-# IDEs
 .idea/
 *.iml
 *.iws
@@ -25,13 +22,9 @@ HELP.md
 .project
 .settings/
 
-# OS
 .DS_Store
 Thumbs.db
 
-# Node / Next.js — same "monorepo uses this root .gitignore instead" reasoning
-# as the Spring Initializr boilerplate above; frontend-service's own
-# create-next-app-generated .gitignore was deleted in favor of this.
 node_modules/
 .next/
 out/
@@ -45,36 +38,22 @@ yarn-error.log*
 next-env.d.ts
 .vercel
 
-# Env / secrets
 .env
 .env.production
 *.pem
 *.key
 
-# Phase 6 — real Kubernetes Secret manifests. The primary path is the
-# imperative `kubectl create secret` command in the README (nothing ever
-# touches disk), but if someone fills in the example YAML by hand instead,
-# it must never be committed. The *.example.yaml template (placeholder
-# values only) stays tracked.
 k8s/secrets/*.yaml
 !k8s/secrets/*.example.yaml
 
-# Docker
 *.pid
 
-# Local overrides
 application-local.properties
 config-repo/*-local.properties
 
-# Claude Code project files
 CLAUDE.md
 .claude/
 
-# Local-only project docs — kept on disk for local use, not committed to
-# the repo. docs/ covers the whole folder (audits, service walkthroughs,
-# schema/event/demo/run-guide docs included) — previously only docs/audits/
-# and docs/services/ were narrower exceptions; the whole folder is local-only
-# now.
 DECISIONS.md
 FLOW.md
 docs/

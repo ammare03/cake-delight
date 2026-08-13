@@ -24,22 +24,6 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * The gateway's trust boundary (CLAUDE.md §4). Runs as a plain servlet
- * Filter — this is the servlet/MVC-based gateway variant
- * (spring-cloud-starter-gateway-server-webmvc), not the reactive one, so
- * there's no GlobalFilter/WebFilter chain to hook into; a regular
- * OncePerRequestFilter applies to every request reaching the embedded
- * Tomcat regardless of how the route itself was declared.
- *
- * Public routes skip validation entirely — either unconditionally
- * ({@code app.security.public-paths}) or for GET only
- * ({@code app.security.public-get-paths}, e.g. catalog browsing, where
- * mutating verbs on the same path still need a token). Everything else
- * needs a valid Bearer token; on success, X-User-Id / X-User-Role are
- * injected so downstream services can trust them without re-validating the
- * JWT.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -57,9 +41,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${app.security.public-get-paths:}")
     private String[] publicGetPaths;
 
-    // The key is rebuilt from the config-loaded secret on each use rather than
-    // cached at startup — one less lifecycle method to explain, and building an
-    // HMAC key from a short string is cheap even on the gateway's hottest path.
     private SecretKey signingKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
@@ -70,26 +51,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Wrapped unconditionally, before the public/protected branch: every
-        // request forwarded downstream — public or authenticated — needs the
-        // original pre-StripPrefix path available so downstream error
-        // handlers (e.g. auth-service's GlobalExceptionHandler) can report
-        // the path the client actually called, not the internal one.
         MutableHttpServletRequest wrapped = new MutableHttpServletRequest(request);
         wrapped.putHeader("X-Original-Path", path);
 
-        // CORS preflight (Phase 5 — frontend-service is a cross-origin
-        // caller now, see CorsConfig) must never require a token: browsers
-        // send OPTIONS without credentials or an Authorization header by
-        // design, on every path, not just the public ones. This servlet
-        // Filter runs ahead of DispatcherServlet, so without this check
-        // every preflight for a protected path (i.e. anything but
-        // register/login) would 401 here before Spring MVC's own CORS
-        // handling (registered via CorsConfig's addCorsMappings) ever got a
-        // chance to answer it — silently breaking the *actual* request too,
-        // since browsers refuse to send it after a failed preflight. Not a
-        // security hole: this filter still never forwards OPTIONS anywhere
-        // that performs a mutation, since it carries no body.
         if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublic(path, request.getMethod())) {
             filterChain.doFilter(wrapped, response);
             return;
@@ -112,9 +76,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             wrapped.putHeader("X-User-Id", claims.getSubject());
             wrapped.putHeader("X-User-Role", claims.get("role", String.class));
-            // Phase 4: order-service embeds this in the order.completed event
-            // payload so notification-service is self-contained and never
-            // needs to call back to auth-service for it (CLAUDE.md §5.3).
             wrapped.putHeader("X-User-Email", claims.get("email", String.class));
 
             filterChain.doFilter(wrapped, response);

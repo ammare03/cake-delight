@@ -10,11 +10,6 @@ import java.util.List;
 
 public interface CakeRepository extends JpaRepository<Cake, Long> {
 
-    // One query for all four optional filters (name/category/minPrice/maxPrice)
-    // — a null parameter just makes its own condition always true, so browsing
-    // with no filters and browsing with all four filters go through the same
-    // query. Available is unconditional, not one of the filters (SD-C1: browse
-    // never shows unavailable cakes).
     @Query("""
             SELECT c FROM Cake c
             WHERE c.available = true

@@ -25,9 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// AuthService now builds its own BCryptPasswordEncoder instead of taking one
-// as a dependency (see AuthService — no SecurityConfig/@Bean for it anymore),
-// so these tests exercise real BCrypt hashing rather than a mocked encoder.
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 

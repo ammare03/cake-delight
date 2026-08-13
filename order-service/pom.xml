@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.cakedelight</groupId>
     <artifactId>order-service</artifactId>
@@ -75,8 +75,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Swagger UI — not in the Initializr catalog, added manually.
-             Same version as catalog-service/rating-service (3.x tracks Boot 4.x). -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

@@ -25,10 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.util.List;
 
-// GET endpoints are public at the gateway (app.security.public-get-paths);
-// POST/PUT/DELETE require a token and are further restricted to ADMIN in
-// the service layer via X-User-Role (CLAUDE.md §4 — gateway proves identity,
-// this service enforces authorization).
 @RestController
 @RequestMapping("/catalog/cakes")
 @RequiredArgsConstructor

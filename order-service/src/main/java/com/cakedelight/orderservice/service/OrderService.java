@@ -27,10 +27,6 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final BasketRepository basketRepository;
-    // Publishes an *internal* Spring event, not the Kafka one directly —
-    // OrderCheckoutEventListener picks it up with @TransactionalEventListener
-    // (phase = AFTER_COMMIT) so the Kafka send can never happen for a
-    // checkout that ends up rolling back. See OrderCheckedOutEvent's javadoc.
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
@@ -50,9 +46,6 @@ public class OrderService {
             orderItem.setOrder(order);
             orderItem.setCakeId(basketItem.getCakeId());
             orderItem.setCakeName(basketItem.getCakeNameSnapshot());
-            // Checkout trusts the basket's snapshot price rather than calling
-            // catalog-service again — see BasketItem's cakeNameSnapshot/
-            // unitPriceSnapshot fields for the documented reasoning.
             orderItem.setUnitPrice(basketItem.getUnitPriceSnapshot());
             orderItem.setQuantity(basketItem.getQuantity());
             order.getItems().add(orderItem);
@@ -65,11 +58,6 @@ public class OrderService {
         basket.getItems().clear();
         basketRepository.save(basket);
 
-        // The one real status transition (SD-O3) — created, then completed,
-        // both within this transaction. Checkout is a stub with nothing left
-        // to do after this (CLAUDE.md §12), so COMPLETED is terminal; the
-        // point isn't a longer lifecycle, it's that the column isn't
-        // structurally stuck on a single literal value.
         saved.setStatus(OrderStatus.COMPLETED);
         saved = orderRepository.save(saved);
 

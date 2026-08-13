@@ -1,12 +1,4 @@
-/**
- * TypeScript mirrors of every backend DTO this frontend talks to. Kept 1:1
- * with the Java records (field names, nullability) rather than reshaped —
- * same reasoning as CLAUDE.md's "no shared domain-model JAR" rule for the
- * Spring services: this is the frontend's own copy of the contract, read
- * directly from each service's dto/ package, not a generated client.
- */
 
-// ---- auth-service ----
 
 export interface RegisterRequest {
   email: string;
@@ -26,14 +18,13 @@ export interface AuthResponse {
   role: "CUSTOMER" | "ADMIN";
 }
 
-// ---- catalog-service ----
 
 export interface Cake {
   id: number;
   name: string;
   description: string;
   category: string;
-  price: number; // BigDecimal, no custom Jackson config anywhere -> serializes as a plain JSON number
+  price: number;
   available: boolean;
   imageUrl: string | null;
   createdAt: string;
@@ -46,7 +37,6 @@ export interface CakeFilters {
   maxPrice?: string;
 }
 
-// ---- order-service ----
 
 export interface AddBasketItemRequest {
   cakeId: number;
@@ -91,7 +81,6 @@ export interface Order {
   createdAt: string;
 }
 
-// ---- rating-service ----
 
 export interface CreateRatingRequest {
   cakeId: number;
@@ -113,7 +102,6 @@ export interface RatingSummary {
   totalRatings: number;
 }
 
-// ---- notification-service ----
 
 export interface Notification {
   id: number;
@@ -124,7 +112,6 @@ export interface Notification {
   createdAt: string;
 }
 
-// ---- shared error shape (api-conventions skill) ----
 
 export interface ValidationFieldError {
   field: string;

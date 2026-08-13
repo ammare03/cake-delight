@@ -4,7 +4,6 @@ import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RatingStarsProps {
-  /** 0-5, fractional allowed for an average (rendered rounded to the nearest whole star). */
   value: number;
   onChange?: (value: number) => void;
   size?: "sm" | "md";

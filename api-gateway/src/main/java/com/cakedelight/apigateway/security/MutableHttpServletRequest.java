@@ -11,16 +11,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/**
- * Lets {@link JwtAuthenticationFilter} inject X-User-Id / X-User-Role headers
- * onto the incoming request before Spring Cloud Gateway forwards it downstream.
- * The gateway is the trust boundary (CLAUDE.md §4) — downstream services read
- * these headers without re-validating the JWT themselves.
- */
 public class MutableHttpServletRequest extends HttpServletRequestWrapper {
 
-    // Case-insensitive: HTTP header names aren't case-sensitive, and callers
-    // downstream (or Spring's own header copying) may ask for either case.
     private final Map<String, String> overrides = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public MutableHttpServletRequest(HttpServletRequest request) {

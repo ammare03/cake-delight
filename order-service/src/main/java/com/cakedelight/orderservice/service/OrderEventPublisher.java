@@ -11,15 +11,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Producer side of CLAUDE.md §5.3. Published synchronously right after the
- * order is saved and the basket is cleared, in the same checkout() call —
- * not via a transactional outbox. That's a deliberate simplification, not an
- * oversight: Saga/event-sourcing-style patterns are explicitly out of scope
- * for this capstone (CLAUDE.md §3), so a checkout that fails between the DB
- * commit and the Kafka send is an accepted, documented gap rather than one
- * solved with more machinery. See README's Phase 4 notes.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -49,9 +40,6 @@ public class OrderEventPublisher {
                 items
         );
 
-        // Keyed by orderId — keeps all messages for the same order on one
-        // partition. Not load-bearing with a single partition, but correct
-        // if the topic is ever repartitioned.
         kafkaTemplate.send(topic, String.valueOf(order.getId()), event);
         log.info("Published order.completed for order {} (user {})", order.getId(), order.getUserId());
     }

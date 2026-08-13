@@ -16,10 +16,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Serif display face for headings/logo only (see globals.css --font-heading)
-// — everything else stays on the sans body font. One accent font, used
-// sparingly, is the "classy" half of "minimal, classy" (CLAUDE.md's Phase 5
-// brief); a whole second typeface family everywhere would be the opposite.
 const fraunces = Fraunces({
   variable: "--font-serif",
   subsets: ["latin"],

@@ -29,7 +29,6 @@ public class RatingService {
     public RatingResponse submitRating(CreateRatingRequest request, String rawUserId) {
         Long userId = parseUserId(rawUserId);
 
-        // CLAUDE.md §5.2 — only users who purchased the cake can rate it.
         requirePurchased(userId, request.cakeId());
 
         if (ratingRepository.existsByCakeIdAndUserId(request.cakeId(), userId)) {

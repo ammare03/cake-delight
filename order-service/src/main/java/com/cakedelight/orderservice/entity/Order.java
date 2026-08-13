@@ -31,8 +31,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // References auth-service's users.id by value only, no FK — same
-    // reasoning as everywhere else user identity crosses a service boundary.
     @Column(name = "user_id", nullable = false)
     private Long userId;
 

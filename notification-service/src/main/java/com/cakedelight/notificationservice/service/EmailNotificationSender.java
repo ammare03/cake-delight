@@ -12,17 +12,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
-/**
- * Real outbound channel (task #11) — sends a plain-text order confirmation
- * over SMTP (Gmail, App Password auth; see README's "Real email
- * notifications" section for account setup). Active by default
- * ({@code app.notification.channel=email}); {@link LoggingNotificationSender}
- * is the opt-in fallback.
- * <p>
- * Deliberately plain text, not HTML/templated — CLAUDE.md's "simple beats
- * clever" applies here same as anywhere else in this project; a templating
- * engine for one email shape would be over-engineering.
- */
 @Component
 @ConditionalOnProperty(prefix = "app.notification", name = "channel", havingValue = "email", matchIfMissing = true)
 @RequiredArgsConstructor
@@ -37,10 +26,6 @@ public class EmailNotificationSender implements NotificationSender {
     @Override
     public void send(OrderCompletedEvent event) {
         if (event.userEmail() == null || event.userEmail().isBlank()) {
-            // No email on the event (the checkout JWT had no "email"
-            // claim) — nothing to send to. Thrown rather than silently
-            // skipped, so NotificationService records this as FAILED
-            // instead of a false SENT.
             throw new IllegalStateException(
                     "Cannot send email notification for order " + event.orderId() + ": event has no userEmail");
         }

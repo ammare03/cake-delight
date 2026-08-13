@@ -38,9 +38,6 @@ public class JwtService {
         return expirationMs;
     }
 
-    // Rebuilt from the config-loaded secret each call rather than cached at
-    // startup — one less lifecycle annotation to explain, and building an
-    // HMAC key from a short string is cheap at this scale.
     private SecretKey signingKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }

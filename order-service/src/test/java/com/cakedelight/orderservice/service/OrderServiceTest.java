@@ -98,8 +98,6 @@ class OrderServiceTest {
         assertThat(result.status()).isEqualTo("COMPLETED");
         assertThat(result.items()).hasSize(2);
 
-        // Saved twice — once as CREATED, once transitioned to COMPLETED
-        // (the real status transition SD-O3 asks for, fixed alongside B1).
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(orderRepository, times(2)).save(orderCaptor.capture());
         Order savedOrder = orderCaptor.getValue();
@@ -108,11 +106,6 @@ class OrderServiceTest {
         assertThat(savedOrder.getItems()).hasSize(2);
         assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.COMPLETED);
 
-        // Published as an internal Spring event, not sent to Kafka directly
-        // from here — OrderCheckoutEventListener defers the actual Kafka
-        // send to AFTER_COMMIT (fixes Blocker B1: publishing before the
-        // transaction commits risked notifying a customer about an order
-        // that then rolled back).
         ArgumentCaptor<OrderCheckedOutEvent> eventCaptor = ArgumentCaptor.forClass(OrderCheckedOutEvent.class);
         verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().userEmail()).isEqualTo("user@example.com");

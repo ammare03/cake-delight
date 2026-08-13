@@ -8,7 +8,6 @@ import { LoginRequest, RegisterRequest } from "@/lib/types";
 
 interface AuthContextValue {
   user: StoredSession | null;
-  /** True until the first render has checked localStorage — avoids a flash of "logged out" UI. */
   isLoading: boolean;
   login: (request: LoginRequest) => Promise<void>;
   register: (request: RegisterRequest) => Promise<void>;
@@ -26,8 +25,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(getSession());
     setIsLoading(false);
 
-    // Dispatched by api-client.ts when a request comes back 401 for a
-    // session that looked valid a moment ago (expired/invalidated token).
     function onUnauthorized() {
       setUser(null);
       router.push("/login");
@@ -44,8 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(request: RegisterRequest) {
-    // register already returns a token (201) — auto-login rather than
-    // making the user re-enter credentials on a separate login screen.
     const response = await authApi.register(request);
     const session = { token: response.token, email: response.email, role: response.role };
     setSession(session);

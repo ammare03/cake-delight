@@ -15,10 +15,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-// Copied from BasketItem at checkout time, not referenced by FK to it — an
-// order must remain a stable historical record even if the basket item it
-// came from is later deleted (it always is, on checkout) or its snapshot
-// would otherwise have been mutable.
 @Entity
 @Table(name = "order_items")
 @Getter

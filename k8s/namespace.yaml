@@ -1,6 +1,3 @@
-# Phase 6 — everything Cake Delight-related lives in one namespace so
-# `kubectl get pods -n cake-delight` shows the whole system, and so
-# `kubectl delete namespace cake-delight` is a clean full teardown.
 apiVersion: v1
 kind: Namespace
 metadata:

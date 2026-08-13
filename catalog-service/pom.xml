@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.cakedelight</groupId>
     <artifactId>catalog-service</artifactId>
@@ -67,9 +67,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Swagger UI (CLAUDE.md Phase 3 task) — not in the Initializr
-             catalog, added manually. 3.x line is the one that tracks
-             Spring Boot 4.x; 2.x only goes up to Boot 3. -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

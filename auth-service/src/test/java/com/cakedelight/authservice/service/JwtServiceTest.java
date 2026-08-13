@@ -25,8 +25,6 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
-        // @Value fields are normally populated by Spring; set them directly
-        // here since this is a plain unit test, not a Spring context test.
         ReflectionTestUtils.setField(jwtService, "secret", TEST_SECRET);
         ReflectionTestUtils.setField(jwtService, "expirationMs", TEST_EXPIRATION_MS);
     }

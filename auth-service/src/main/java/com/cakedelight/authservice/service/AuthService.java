@@ -23,9 +23,6 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
-    // No SecurityConfig/@Bean for this — the gateway is the trust boundary
-    // (CLAUDE.md §4), this service has no endpoints to lock down, and BCrypt
-    // needs no configuration beyond the default work factor.
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Transactional
@@ -47,7 +44,6 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        // Same exception for "no such user" and "wrong password" — don't leak which one.
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(InvalidCredentialsException::new);
 

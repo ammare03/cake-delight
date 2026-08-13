@@ -30,10 +30,6 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse checkout(
             @RequestHeader(value = "X-User-Id", required = false) String userId,
-            // Optional, not required: only present when the caller's JWT carried
-            // an email claim (see api-gateway's JwtAuthenticationFilter). Absence
-            // shouldn't block checkout — it just means the published event's
-            // userEmail is null.
             @RequestHeader(value = "X-User-Email", required = false) String userEmail
     ) {
         return orderService.checkout(userId, userEmail);

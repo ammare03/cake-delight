@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.cakedelight</groupId>
     <artifactId>notification-service</artifactId>
@@ -43,11 +43,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
-        <!-- Real email sending (task #11) — JavaMailSender autoconfiguration,
-             wired to Gmail SMTP via config-repo/notification-service.properties.
-             No matching "-mail-test" starter exists in this Boot line; the
-             other "-test" starters already pull in JUnit5/Mockito, which is
-             all EmailNotificationSenderTest needs. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
@@ -80,8 +75,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Swagger UI — not in the Initializr catalog, added manually.
-             Same version as the other services (3.x tracks Boot 4.x). -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

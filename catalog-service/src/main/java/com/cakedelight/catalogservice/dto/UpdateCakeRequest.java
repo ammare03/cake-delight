@@ -7,9 +7,6 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-// PUT is a full replace (api-conventions §2 — prefer PUT over PATCH), so this
-// carries the same required fields as CreateCakeRequest rather than optional
-// partial-update fields.
 public record UpdateCakeRequest(
         @NotBlank(message = "name is required")
         @Size(max = 100, message = "name must be at most 100 characters")

@@ -5,10 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-// Consumer side of CLAUDE.md §5.3. Spring Boot auto-configures @KafkaListener
-// support the moment spring-kafka is on the classpath — no @EnableKafka
-// needed. Group id / deserializer settings live in
-// config-repo/notification-service.properties.
 @Component
 @RequiredArgsConstructor
 @Slf4j

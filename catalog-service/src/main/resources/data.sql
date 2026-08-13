@@ -1,24 +1,5 @@
--- Dev seed data (CLAUDE.md §5.2: "~10-15 cakes loaded via data.sql on
--- startup for dev"). Runs on every startup after Hibernate creates/updates
--- the schema (spring.jpa.defer-datasource-initialization=true in
--- config-repo/catalog-service.properties). The DELETE keeps this idempotent
--- across restarts instead of appending duplicate rows each time.
 DELETE FROM cakes;
 
--- image_url values point at Wikimedia Commons (upload.wikimedia.org) —
--- freely licensed (public domain / CC), stably hosted, and each URL was
--- verified (HTTP 200, image/jpeg) before being added here. Picked for a
--- reasonable visual match to the cake's name/description, not for being
--- the literal product photo. frontend-service's CakeCard/cake detail page
--- render this directly via a plain <img> (see frontend-service/lib/
--- category-style.ts) — no code change needed for these to show up.
---
--- created_at is set explicitly (NOW()) because @CreationTimestamp only fires
--- when Hibernate performs the insert; this raw SQL script bypasses Hibernate
--- entirely, and Hibernate generates the column NOT NULL with no DB-level
--- default (it assumes the ORM always populates it) — so under MySQL's
--- strict mode, omitting it here fails with "Field 'created_at' doesn't have
--- a default value".
 INSERT INTO cakes (name, description, category, price, available, image_url, created_at) VALUES
 ('Chocolate Truffle', 'Rich dark chocolate sponge layered with truffle ganache', 'chocolate', 500.00, true, 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Chocolate_truffle_cake.jpg/960px-Chocolate_truffle_cake.jpg', NOW()),
 ('Classic Red Velvet', 'Velvety red sponge with cream cheese frosting', 'classic', 550.00, true, 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Red_velvet_cake_slice.jpg/960px-Red_velvet_cake_slice.jpg', NOW()),

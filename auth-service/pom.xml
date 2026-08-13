@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
     <groupId>com.cakedelight</groupId>
     <artifactId>auth-service</artifactId>
@@ -67,16 +67,11 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- BCrypt only — not the full spring-boot-starter-security, which would
-             lock every endpoint behind a login form/Basic Auth by default. The
-             gateway is the trust boundary (see CLAUDE.md §4); this service just
-             needs a password encoder. -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
-        <!-- JWT (HS256) issuance -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>

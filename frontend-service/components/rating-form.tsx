@@ -10,11 +10,6 @@ import { RatingStars } from "@/components/rating-stars";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-// CAKE_NOT_PURCHASED and DUPLICATE_RATING are both expected outcomes here,
-// not failures — there's no endpoint to check either condition up front
-// (rating-service only verifies on submit), so the form just tries and
-// swaps itself for an explanatory message rather than showing an error
-// toast for a state the user didn't do anything wrong to reach.
 const BLOCKED_MESSAGES: Record<string, string> = {
   CAKE_NOT_PURCHASED: "You can only review cakes you've purchased.",
   DUPLICATE_RATING: "You've already reviewed this cake — thank you!",

@@ -20,9 +20,6 @@ import java.util.List;
 @Slf4j
 public class CakeService {
 
-    // The role string the JWT carries for admins (see auth-service's Role
-    // enum — CUSTOMER/ADMIN). No shared JAR (CLAUDE.md §10), so this is
-    // duplicated as a literal rather than an imported enum.
     private static final String ADMIN_ROLE = "ADMIN";
 
     private final CakeRepository cakeRepository;

@@ -18,8 +18,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-// Plain @Getter/@Setter, not @Data — see catalog-service's Cake entity for
-// the JPA equals()/hashCode() reasoning (coding-guidelines §4).
 @Entity
 @Table(name = "baskets")
 @Getter
@@ -31,7 +29,6 @@ public class Basket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // One active basket per user — findByUserId is how it's always looked up.
     @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
 

@@ -14,11 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
-// Plain @Getter/@Setter, not @Data — see coding-guidelines §4 (entity
-// equals()/hashCode() from @Data breaks badly with JPA).
 @Entity
 @Table(name = "ratings", uniqueConstraints = {
-        // One rating per user per cake (CLAUDE.md §5.2).
         @UniqueConstraint(name = "uk_rating_cake_user", columnNames = {"cake_id", "user_id"})
 })
 @Getter
@@ -30,9 +27,6 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // No FK to catalog-service's cakes table — cross-service DB access is
-    // forbidden (CLAUDE.md §10). This service doesn't validate the cake
-    // exists; that's out of Phase 3 scope (would need a Feign call).
     @Column(name = "cake_id", nullable = false)
     private Long cakeId;
 

@@ -20,9 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-// Every endpoint here requires auth at the gateway (CLAUDE.md §4 doesn't
-// list any /api/ratings/** path as public) — X-User-Id is always expected
-// to be present by the time a request reaches this controller.
 @RestController
 @RequestMapping("/ratings")
 @RequiredArgsConstructor

@@ -36,10 +36,6 @@ public class BasketService {
         CakeResponse cake = fetchAvailableCake(request.cakeId());
         Basket basket = getOrCreateBasket(userId);
 
-        // Adding a cake already in the basket increases its quantity rather
-        // than creating a second line for the same cake — the natural
-        // "add to cart" behavior, and keeps (basket, cake) effectively unique
-        // without needing a DB constraint to enforce it.
         BasketItem item = basket.getItems().stream()
                 .filter(existing -> existing.getCakeId().equals(request.cakeId()))
                 .findFirst()
@@ -74,7 +70,7 @@ public class BasketService {
     @Transactional
     public void removeItem(String rawUserId, Long itemId) {
         BasketItem item = findItemOrThrow(parseUserId(rawUserId), itemId);
-        item.getBasket().getItems().remove(item); // orphanRemoval deletes the row
+        item.getBasket().getItems().remove(item);
         basketRepository.save(item.getBasket());
         log.info("Removed basket item {}", itemId);
     }
@@ -107,10 +103,6 @@ public class BasketService {
                 .orElseThrow(() -> new BasketItemNotFoundException(itemId));
     }
 
-    // Resolves the cake through catalog-service and enforces the same
-    // "unavailable cakes are excluded" rule catalog-service's own browse
-    // endpoint applies — a cake can still be fetched directly by id even
-    // when unavailable, so this has to be checked here too, not assumed.
     private CakeResponse fetchAvailableCake(Long cakeId) {
         CakeResponse cake;
         try {

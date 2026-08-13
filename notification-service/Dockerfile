@@ -1,10 +1,4 @@
-# notification-service — Phase 6. See config-server/Dockerfile for the full
-# rationale (multi-stage build, no reliance on the uncommitted mvnw); this
-# file only differs in the exposed port. SMTP_PASSWORD (and every other
-# secret) is injected at *runtime* as an environment variable — never baked
-# into this image — see the "Secrets" section of the root README.
 
-# ---- Build stage ----
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /build
 
@@ -14,7 +8,6 @@ RUN mvn -B -q dependency:go-offline
 COPY src ./src
 RUN mvn -B -q clean package -DskipTests
 
-# ---- Runtime stage ----
 FROM eclipse-temurin:17-jre-alpine
 RUN addgroup -S spring && adduser -S spring -G spring
 WORKDIR /app

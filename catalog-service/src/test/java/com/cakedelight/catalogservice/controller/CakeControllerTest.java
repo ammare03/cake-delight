@@ -27,9 +27,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// GlobalExceptionHandler isn't picked up automatically by the @WebMvcTest
-// slice unless imported — it lives in the exception package, outside the
-// default component scan this slice restricts itself to.
 @WebMvcTest(controllers = CakeController.class)
 @Import(GlobalExceptionHandler.class)
 class CakeControllerTest {

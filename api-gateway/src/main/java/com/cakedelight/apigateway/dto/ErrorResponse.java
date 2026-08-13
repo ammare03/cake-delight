@@ -4,7 +4,6 @@ import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 
-/** Same shape as every other service's error response — see the api-conventions skill. */
 public record ErrorResponse(
         Instant timestamp,
         int status,

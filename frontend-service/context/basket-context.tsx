@@ -8,9 +8,7 @@ import { useAuth } from "@/context/auth-context";
 interface BasketContextValue {
   basket: Basket | null;
   itemCount: number;
-  /** True only for the very first fetch — the basket page's loading skeleton keys off this, not subsequent refreshes. */
   loading: boolean;
-  /** Re-fetch the basket — call after any add/update/remove/checkout so the nav badge and basket page agree. */
   refresh: () => Promise<void>;
 }
 
@@ -30,8 +28,6 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     try {
       setBasket(await basketApi.get());
     } catch {
-      // Basket badge is a nice-to-have, not a critical path — swallow and
-      // leave the last-known basket rather than surfacing a toast for it.
     } finally {
       setLoading(false);
     }

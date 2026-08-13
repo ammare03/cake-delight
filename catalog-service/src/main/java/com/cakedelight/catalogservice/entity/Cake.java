@@ -14,9 +14,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-// Plain @Getter/@Setter, not @Data — @Data's generated equals()/hashCode()
-// pull in every field (including lazy associations later) which breaks
-// badly with JPA. See coding-guidelines §4.
 @Entity
 @Table(name = "cakes")
 @Getter

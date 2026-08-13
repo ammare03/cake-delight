@@ -5,12 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/**
- * "Sending" a notification is logging to console — the original CLAUDE.md
- * §5.2 behavior, kept as an opt-in fallback now that {@link EmailNotificationSender}
- * is the default. Select it with {@code app.notification.channel=log}, e.g.
- * for local development without SMTP credentials configured.
- */
 @Component
 @ConditionalOnProperty(prefix = "app.notification", name = "channel", havingValue = "log")
 @Slf4j

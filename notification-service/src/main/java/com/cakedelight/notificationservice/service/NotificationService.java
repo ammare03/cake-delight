@@ -25,12 +25,6 @@ public class NotificationService {
 
     @Transactional
     public void recordOrderCompleted(OrderCompletedEvent event) {
-        // Idempotency (CLAUDE.md §5.3): Kafka's at-least-once delivery means
-        // this can run twice for the same event (consumer restart before
-        // offset commit, broker retry, etc.) — a redelivery must not create
-        // a second notification. Checked here rather than relying solely on
-        // the DB's unique constraint so a redelivery logs a clean skip
-        // instead of surfacing as a constraint-violation error.
         if (notificationRepository.existsByEventId(event.eventId())) {
             log.info("Skipping already-processed order.completed event {} (order {})",
                     event.eventId(), event.orderId());
@@ -44,11 +38,6 @@ public class NotificationService {
         notification.setChannel(notificationSender.channel());
         notification.setPayload(toPayload(event));
 
-        // Routed through the NotificationSender seam rather than logging
-        // inline — a real channel implementation can throw here for a
-        // genuine delivery failure, which is what makes FAILED a real
-        // possible outcome (SD-N3) instead of a column that's structurally
-        // stuck on SENT.
         try {
             notificationSender.send(event);
             notification.setStatus(NotificationStatus.SENT);
@@ -70,9 +59,6 @@ public class NotificationService {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException ex) {
-            // Should never happen for a plain record of primitives/strings —
-            // fall back to toString() rather than letting a serialization
-            // quirk block recording that the notification happened at all.
             log.warn("Could not serialize order.completed event {} to JSON; falling back to toString()", event.eventId(), ex);
             return event.toString();
         }
