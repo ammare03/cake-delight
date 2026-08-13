@@ -1,12 +1,3 @@
-# Shared, non-secret environment variables every Spring service reads —
-# the in-cluster equivalent of the ${VAR:localhost-default} placeholders
-# added to config-repo/*.properties and each service's bootstrap
-# application.properties for Phase 6. Consumed via `envFrom.configMapRef`
-# in every Deployment under k8s/services/.
-#
-# The config-repo/ files themselves are NOT duplicated here — see
-# k8s/config/README.md for why that ConfigMap is generated from the real
-# config-repo/ directory instead of hand-copied into a manifest.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,8 +11,4 @@ data:
   DB_PORT: "3306"
   KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
   FRONTEND_ORIGIN: "http://localhost:30300"
-  # "log" by default so a fresh `kubectl apply` demonstrates the full
-  # order -> notification flow with zero setup — see the root README's
-  # "Secrets" section. Override to "email" only where SMTP_PASSWORD (in
-  # cake-delight-secrets) is a real Gmail App Password.
-  NOTIFICATION_CHANNEL: "log"
+  NOTIFICATION_CHANNEL: "email"

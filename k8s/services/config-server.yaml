@@ -1,8 +1,3 @@
-# config-server — Phase 6. The one service in k8s/services/ that mounts a
-# ConfigMap volume (cake-delight-config-repo — see k8s/config/README.md for
-# why that ConfigMap is generated rather than committed) instead of just
-# using envFrom; CONFIG_REPO_PATH points config-server's own
-# search-locations at the mounted path.
 apiVersion: v1
 kind: Service
 metadata:
@@ -44,8 +39,6 @@ spec:
             - name: config-repo
               mountPath: /config-repo
               readOnly: true
-          # Gates readiness/liveness until the app has actually finished
-          # starting — see auth-service.yaml for the full rationale.
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -53,7 +46,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
-            failureThreshold: 60
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /actuator/health

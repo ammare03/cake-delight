@@ -37,12 +37,6 @@ spec:
                 name: cake-delight-secrets
           ports:
             - containerPort: 8081
-          # Gates readiness/liveness until the app has actually finished
-          # starting — Spring Boot's context init genuinely took 2+ minutes
-          # under CPU contention from many concurrent JVM startups on this
-          # cluster, well past what a bare livenessProbe's initialDelay
-          # tolerated, which was killing pods mid-startup (see the identical
-          # comment/pattern repeated across every Spring service manifest).
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -50,7 +44,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
-            failureThreshold: 60
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -65,12 +59,6 @@ spec:
             initialDelaySeconds: 45
             periodSeconds: 10
             failureThreshold: 6
-          # Limit sized above the request deliberately (standard JVM-in-k8s
-          # sizing): a Spring Boot 4 + Hibernate JVM's startup phase (class
-          # loading, JIT warmup) spikes well above its steady-state memory,
-          # and an OOMKill during that spike was observed at the original
-          # 512Mi limit in testing on this cluster. The same pattern is
-          # repeated identically across every Spring service manifest.
           resources:
             requests:
               cpu: 100m

@@ -1,14 +1,3 @@
-# frontend-service — the only other externally-reachable service (NodePort
-# 30300, fixed for the same reason as api-gateway's 30090). No envFrom: it's
-# a pure client with no Spring Cloud participation (DECISIONS.md D-11) —
-# NEXT_PUBLIC_API_BASE_URL is baked into the image at build time instead
-# (see frontend-service/Dockerfile), not supplied here at deploy time.
-#
-# IMPORTANT: the image must be built with
-#   --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:30090/api
-# i.e. pointing at api-gateway's NodePort above, not the Docker Compose
-# default of :9090 — see the root README's Kubernetes section for the exact
-# build command.
 apiVersion: v1
 kind: Service
 metadata:
@@ -45,10 +34,6 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
-          # Gates readiness/liveness until the app has actually finished
-          # starting — see auth-service.yaml for the full rationale (Next.js
-          # starts faster than the Spring services, but the same contention
-          # risk applies under a loaded cluster).
           startupProbe:
             httpGet:
               path: /

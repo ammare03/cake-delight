@@ -1,8 +1,3 @@
-# eureka-server — Phase 6. No config-server dependency to wait on (it reads
-# its own local application.properties, same as outside Docker — see
-# DECISIONS.md D-15), so it has no envFrom beyond nothing being needed yet;
-# kept explicit rather than omitted so every service manifest has the same
-# shape.
 apiVersion: v1
 kind: Service
 metadata:
@@ -37,8 +32,6 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8761
-          # Gates readiness/liveness until the app has actually finished
-          # starting — see auth-service.yaml for the full rationale.
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -46,7 +39,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
-            failureThreshold: 60
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /actuator/health

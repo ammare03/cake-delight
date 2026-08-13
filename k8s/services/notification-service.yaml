@@ -1,7 +1,3 @@
-# notification-service — SMTP_PASSWORD arrives via cake-delight-secrets
-# (envFrom below); if it's empty, NOTIFICATION_CHANNEL (from
-# cake-delight-env, default "log") keeps the flow demonstrable regardless —
-# see the root README's "Secrets" section.
 apiVersion: v1
 kind: Service
 metadata:
@@ -41,8 +37,6 @@ spec:
                 name: cake-delight-secrets
           ports:
             - containerPort: 8085
-          # Gates readiness/liveness until the app has actually finished
-          # starting — see auth-service.yaml for the full rationale.
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -50,7 +44,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
-            failureThreshold: 60
+            failureThreshold: 180
           readinessProbe:
             httpGet:
               path: /actuator/health
