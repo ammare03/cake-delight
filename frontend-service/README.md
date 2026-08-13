@@ -23,5 +23,5 @@ Serves on `http://localhost:3000`. Copy `.env.local.example` to `.env.local` if 
 ## Conventions
 
 - Every request goes through `api-gateway` (`NEXT_PUBLIC_API_BASE_URL`) — never a business service directly.
-- No admin UI — see CLAUDE.md §12; this only covers the customer-facing flow (browse, basket, checkout, orders, ratings, notifications).
+- No admin UI — this only covers the customer-facing flow (browse, basket, checkout, orders, ratings, notifications).
 - `lib/error-messages.ts` turns a thrown `ApiError` into toast-safe copy; form-level validation errors (`ApiError.fieldErrors`) render inline instead.
