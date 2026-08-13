@@ -73,7 +73,7 @@ CLAUDE.md
 # Audit reports — local only, not committed. Narrower than docs/ itself:
 # graded deliverables (DL-2/DL-5/DL-6/DL-8 docs) belong in docs/ and must
 # be committed; only docs/audits/ is progress-tracking noise.
-docs/audits/
+docs/
 
 # Local-only project reference docs — kept on disk for local use, not
 # committed to the repo.

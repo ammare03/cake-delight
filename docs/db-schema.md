@@ -152,8 +152,3 @@ Notes:
 | `created_at` | `TIMESTAMP` | NOT NULL, set once at insert |
 
 Source: `notification-service/src/main/java/com/cakedelight/notificationservice/entity/Notification.java`
-
-Notes:
-- Consumes `order.completed` via `@KafkaListener` (`OrderCompletedListener`); "sending" a notification means routing through the active `NotificationSender` (`EmailNotificationSender` by default — a real Gmail SMTP send; `LoggingNotificationSender` as an opt-in console-only fallback via `app.notification.channel=log`) and storing this row either way. Real email was originally deferred past Phase 4 per CLAUDE.md §5.2's "(optional later enhancement)"; it's since been implemented as the tracked follow-up — see the README's **Real email notifications** section for account/config setup.
-- Idempotency: `existsByEventId()` is checked before inserting, and `event_id` is also unique at the DB level — a redelivered Kafka message is logged and skipped, not double-recorded (same belt-and-suspenders pattern as `rating-service`'s duplicate-rating check).
-- `GET /notifications` (token required) lists the current user's notifications — the "nice-to-have" endpoint CLAUDE.md §5.2 mentions.
